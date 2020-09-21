@@ -9,9 +9,13 @@
 
 #NOTES:
 #constant step size parameter -> weighted average (favors more recent samples)
+# alpha = 1/n -> "sample-agerage method"
 
 #QUESTIONS:
 #how much should each reward be? Is it ok to have each be 1 and just the prob of selection changes?
+
+#TODO:
+#expand ban to add different results when accounting for different type of alpha
 
 import numpy as np
 import matplotlib
@@ -24,7 +28,7 @@ if __name__ == "__main__":
 
 	# init bandits
 	numBandits = 10
-	initialEst = 0.5 #higher value will make greedy algo search more
+	initialEst = 0.25 #higher value will make greedy algo search more
 	eps = 0.25 #set epsilon param
 	stepSize = 0.1
 	walkDist = 0.01
@@ -97,7 +101,9 @@ if __name__ == "__main__":
 		#hypothesis: weighted average (aka constant step size) should work better for moving value problems
 
 		#draw points
-		pt = plt.plot(step,ban[choice,1],color)
+		SA = plt.plot(step,ban[choice,1],color) #Sample-Average Method
+
+		BP = plt.plot(step,np.max(ban[:,0]),'.k') #best probability
 		plt.draw()
 		plt.pause(0.01)
 
@@ -107,4 +113,4 @@ if __name__ == "__main__":
 		print('best prob = ', ban[choice,1])
 		step += 1
 
-	sleep(5)
+	sleep(2)
