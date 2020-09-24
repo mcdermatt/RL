@@ -27,6 +27,15 @@ from numpy import convolve
 
 if __name__ == "__main__":
 
+	numBandits = 10
+	initialEst = 0.5 #higher value will make greedy algo search more
+	eps = 0.1 #set epsilon param
+	stepSizeWA = 0.125 #weighted average step size
+	walkDist = 0.01
+	runLen = 10000
+	numRuns = 2000
+	banSTD = 1 #standard deviation of rewards within each bandit
+
 	fig = plt.figure(0)
 	SA_patch = mpatches.Patch(color = 'red', label = 'Sample-Average')
 	WA_patch = mpatches.Patch(color = 'blue', label = 'Weighted-Average')
@@ -34,23 +43,16 @@ if __name__ == "__main__":
 	ax1 = fig.add_subplot(211)
 	ax1.set_xlabel('Steps')
 	ax1.set_ylabel('Average Reward')
+	ax1.set_ylim([0,1.5])
 	ax1.legend(handles = [SA_patch, WA_patch])
+	ax1.set_title('Nonstationary Bandits with ⍺ = %f' % stepSizeWA)
 
 	ax2 = fig.add_subplot(212)
 	ax2.set_xlabel('Steps')
 	ax2.set_ylabel('% Optimal Action')
 	ax2.legend(handles = [SA_patch, WA_patch])
 
-	# init bandits
-	numBandits = 10
-	initialEst = 0.25 #higher value will make greedy algo search more
-	eps = 0.1 #set epsilon param
-	stepSizeWA = 0.125 #weighted average step size
-	walkDist = 0.01
-	# walkDist = 0
-
-	runLen = 1000
-	numRuns = 2000
+	
 	#record history of rewards at each step for every run
 	wa = np.zeros([runLen,numRuns]) 
 	sa = np.zeros([runLen,numRuns])
@@ -61,8 +63,8 @@ if __name__ == "__main__":
 
 	run = 0
 	while run < numRuns:
-		numSuccSA = 0
-		numSuccWA = 0
+		# numSuccSA = 0
+		# numSuccWA = 0
 		# banHistory = initialEst*np.ones([numBandits,1])
 
 		ban = np.zeros([numBandits,5])
@@ -120,22 +122,24 @@ if __name__ == "__main__":
 				color = 'w'
 				# print('random trial')
 
-			#roll with probability of success according to choice bandit
-			roll = np.random.rand()
-
 			#record if methods are chosing the optimal bandit
 			if choiceWA == np.argmax(ban[:,0]):
 				optWA[step,run] = 1
 			if choiceSA == np.argmax(ban[:,0]):
 				optSA[step,run] = 1
 
-			#set reward sa
-			if roll < ban[choiceSA,0]: #successful roll for SA
-				RSA = 1
-				numSuccSA += 1
-			else:
-				RSA = 0
+			#OlD WAY OF GETTING REWARD
+			#roll with probability of success according to choice bandit
+			# roll = np.random.rand()
+			# #set reward sa
+			# if roll < ban[choiceSA,0]: #successful roll for SA
+			# 	RSA = 1
+			# 	# numSuccSA += 1
+			# else:
+			# 	RSA = 0
 			
+			RSA = banSTD*np.random.randn() + ban[choiceSA,0]
+
 			historySA = np.append(historySA,RSA)
 
 			#bandit has not been picked by SA method yet
@@ -153,12 +157,14 @@ if __name__ == "__main__":
 				ban[choiceSA,2] += 1 #update number of times bandit has been picked
 
 
-			if roll < ban[choiceWA,0]: #successful roll for WA
-				RWA = 1
-				numSuccWA += 1
-			else:
-				RWA = 0
-			
+			# if roll < ban[choiceWA,0]: #successful roll for WA
+			# 	RWA = 1
+			# 	# numSuccWA += 1
+			# else:
+			# 	RWA = 0
+			RWA = banSTD*np.random.randn() + ban[choiceWA,0]
+
+
 			ban[choiceWA,3] = ban[choiceWA,3] + stepSizeWA*(RWA - ban[choiceWA,3]) #update estimate of reward for WA
 			# historyWA = np.append(historyWA,ban[choiceWA,3]) #store what it thinks % succss currently is 
 			# historyWA = np.append(historyWA,numSuccWA/(step+1))	#store actual cumulative success is
@@ -235,6 +241,7 @@ if __name__ == "__main__":
 			WAPlot, = ax1.plot(cumWA, color = 'b', lw = 0.5)
 			SAPlot, = ax1.plot(cumSA, color = 'r', lw = 0.5)
 			
+			#plot % optimal bandit chosen by each method
 			WAOptPlot, = ax2.plot(100*np.mean(optWA[:,:run], axis = 1) , color = 'b', lw = 0.5)
 			SAOptPlot, = ax2.plot(100*np.mean(optSA[:,:run], axis = 1) , color = 'r', lw = 0.5)
 
@@ -249,5 +256,7 @@ if __name__ == "__main__":
 		# print(ban)
 		run += 1
 	
+	np.save('wa_pt25.npy',cumWA)
+	np.save('waOpt_pt25.npy',100*np.mean(optWA[:,:run]))
 	plt.savefig('2_5_Monte_Carlo.png')
 	sleep(5)
