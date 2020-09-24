@@ -21,31 +21,43 @@
 import numpy as np
 import matplotlib
 from matplotlib import pyplot as plt
+import matplotlib.patches as mpatches
 from time import sleep
 from numpy import convolve
 
 if __name__ == "__main__":
 
 	fig = plt.figure(0)
+	SA_patch = mpatches.Patch(color = 'red', label = 'Sample-Average')
+	WA_patch = mpatches.Patch(color = 'blue', label = 'Weighted-Average')
+
 	ax1 = fig.add_subplot(211)
 	ax1.set_xlabel('Steps')
 	ax1.set_ylabel('Average Reward')
+	ax1.legend(handles = [SA_patch, WA_patch])
+
 	ax2 = fig.add_subplot(212)
 	ax2.set_xlabel('Steps')
 	ax2.set_ylabel('% Optimal Action')
+	ax2.legend(handles = [SA_patch, WA_patch])
 
 	# init bandits
 	numBandits = 10
 	initialEst = 0.25 #higher value will make greedy algo search more
 	eps = 0.1 #set epsilon param
 	stepSizeWA = 0.125 #weighted average step size
-	# walkDist = 0.01
-	walkDist = 0
+	walkDist = 0.01
+	# walkDist = 0
 
-	runLen = 10
-	numRuns = 10
-	wa = np.zeros([runLen,numRuns])
+	runLen = 1000
+	numRuns = 2000
+	#record history of rewards at each step for every run
+	wa = np.zeros([runLen,numRuns]) 
 	sa = np.zeros([runLen,numRuns])
+
+	#for each step record if method was guessing optimally
+	optWA = np.zeros([runLen-1,numRuns])
+	optSA = np.zeros([runLen-1,numRuns])
 
 	run = 0
 	while run < numRuns:
@@ -56,7 +68,7 @@ if __name__ == "__main__":
 		ban = np.zeros([numBandits,5])
 
 		#set the true initial value of each bandit to be equal
-		# ban[:,0] = 0.1*np.ones(numBandits) 
+		ban[:,0] = 0.1*np.ones(numBandits) 
 		
 		#TEST- give one of the bandits an actual advantage
 		# ban[0,0] = 0.4 
@@ -65,7 +77,7 @@ if __name__ == "__main__":
 		# ban[:,0] = 0.5*np.random.rand(numBandits)
 
 		#linear space bandits
-		ban[:,0] = (np.arange(0,numBandits) / numBandits)* 0.25
+		# ban[:,0] = (np.arange(0,numBandits) / (numBandits))
 
 		ban[:,1] = initialEst #set the initial estimate of each bandit for SA case
 		ban[:,3] = initialEst #set the initial estimate of each bandit for WA case
@@ -111,6 +123,11 @@ if __name__ == "__main__":
 			#roll with probability of success according to choice bandit
 			roll = np.random.rand()
 
+			#record if methods are chosing the optimal bandit
+			if choiceWA == np.argmax(ban[:,0]):
+				optWA[step,run] = 1
+			if choiceSA == np.argmax(ban[:,0]):
+				optSA[step,run] = 1
 
 			#set reward sa
 			if roll < ban[choiceSA,0]: #successful roll for SA
@@ -119,19 +136,19 @@ if __name__ == "__main__":
 			else:
 				RSA = 0
 			
+			historySA = np.append(historySA,RSA)
+
 			#bandit has not been picked by SA method yet
 			if ban[choiceSA,2] == 0:
 				ban[choiceSA,1] = RSA #set reward to whatever the roll was
 				ban[choiceSA,2] = 1
 				stepSizeSA = 1 # make the stepsize val 1
-				historySA = np.append(historySA,numSuccSA/(step+1))
+				# historySA = np.append(historySA,numSuccSA/(step+1))
 			#bandit has been picked already by SA method
 			else:
 				stepSizeSA = 1/(ban[choiceSA,2])
 				ban[choiceSA,1] = ban[choiceSA,1] + stepSizeSA*(RSA - ban[choiceSA,1]) #update estimate of bandit reward for SA
-				# historyWA = np.append(historyWA,ban[choice,3])
-				# historySA = np.append(historySA,ban[choiceSA,1])
-				historySA = np.append(historySA,numSuccSA/step)
+				# historySA = np.append(historySA,numSuccSA/step)
 
 				ban[choiceSA,2] += 1 #update number of times bandit has been picked
 
@@ -144,7 +161,8 @@ if __name__ == "__main__":
 			
 			ban[choiceWA,3] = ban[choiceWA,3] + stepSizeWA*(RWA - ban[choiceWA,3]) #update estimate of reward for WA
 			# historyWA = np.append(historyWA,ban[choiceWA,3]) #store what it thinks % succss currently is 
-			historyWA = np.append(historyWA,numSuccWA/(step+1))	#store actual cumulative success
+			# historyWA = np.append(historyWA,numSuccWA/(step+1))	#store actual cumulative success is
+			historyWA = np.append(historyWA,RWA)
 			# print('historyWA ', historyWA)
 
 
@@ -153,8 +171,9 @@ if __name__ == "__main__":
 			#make sure no probability is less than 0
 			ban[ban[:,0] < 0] = 0
 			#make sure probability of success is never more than 1 by setting soft cap on probability
-			ban[ban[:,0] > 0.5,0] = ban[ban[:,0] > 0.5,0] - ban[ban[:,0] > 0.5,0]**4
-			# ban[:,0] = ban[:,0] - ban[:,0] ** 3
+			# ban[ban[:,0] > 0.5,0] = ban[ban[:,0] > 0.5,0] - ban[ban[:,0] > 0.5,0]**4
+			#hard cap
+			ban[ban[:,0] > 0.9] = ban[ban[:,0] > 0.9] * 0.9
 
 
 			#update bandit history (used for display)
@@ -201,14 +220,34 @@ if __name__ == "__main__":
 			# print('best prob = ', ban[choice,1])
 			# print(banHistory)
 			# print('choice SA + ', choiceSA, ' choiceWA = ', choiceWA)
-			print(step)
+			# print(step)
 			step += 1
 		wa[:,run] = historyWA
 		sa[:,run] = historySA
 
-		plt.draw()
-		plt.pause(0.01)
+		#average all nonzero outcomes and graph
+		cumWA = np.mean(wa[:,:run], axis = 1)
+		cumSA = np.mean(sa[:,:run], axis = 1)
+		
+
+
+		if run % 10 == 0:
+			WAPlot, = ax1.plot(cumWA, color = 'b', lw = 0.5)
+			SAPlot, = ax1.plot(cumSA, color = 'r', lw = 0.5)
+			
+			WAOptPlot, = ax2.plot(100*np.mean(optWA[:,:run], axis = 1) , color = 'b', lw = 0.5)
+			SAOptPlot, = ax2.plot(100*np.mean(optSA[:,:run], axis = 1) , color = 'r', lw = 0.5)
+
+			plt.draw()
+			plt.pause(0.01)
+			WAPlot.remove()
+			SAPlot.remove()
+			WAOptPlot.remove()
+			SAOptPlot.remove()
+
 		print('run number: ',run,' of ', numRuns)
+		# print(ban)
 		run += 1
 	
+	plt.savefig('2_5_Monte_Carlo.png')
 	sleep(5)
