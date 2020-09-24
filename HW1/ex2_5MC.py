@@ -7,30 +7,18 @@
 # action-value method using a constant step-size parameter, ↵ = 0.1. Use " = 0.1 and
 # longer runs, say of 10,000 steps.
 
-#NOTES:
-#constant step size parameter -> weighted average (favors more recent samples)
-# alpha = 1/n -> "sample-agerage method"
-
-#QUESTIONS:
-#how much should each reward be? Is it ok to have each be 1 and just the prob of selection changes?
-
-#TODO:
-#expand ban to add different results when accounting for different type of alpha
-#update best metric to account for both SA and WA methods- !!!
-
 import numpy as np
 import matplotlib
 from matplotlib import pyplot as plt
 import matplotlib.patches as mpatches
 from time import sleep
-from numpy import convolve
 
 if __name__ == "__main__":
 
 	numBandits = 10
 	initialEst = 0.5 #higher value will make greedy algo search more
 	eps = 0.1 #set epsilon param
-	stepSizeWA = 0.125 #weighted average step size
+	stepSizeWA = 0.5 #weighted average step size
 	walkDist = 0.01
 	runLen = 10000
 	numRuns = 2000
@@ -43,7 +31,7 @@ if __name__ == "__main__":
 	ax1 = fig.add_subplot(211)
 	ax1.set_xlabel('Steps')
 	ax1.set_ylabel('Average Reward')
-	ax1.set_ylim([0,1.5])
+	ax1.set_ylim([0,2])
 	ax1.legend(handles = [SA_patch, WA_patch])
 	ax1.set_title('Nonstationary Bandits with ⍺ = %f' % stepSizeWA)
 
@@ -72,22 +60,27 @@ if __name__ == "__main__":
 		#set the true initial value of each bandit to be equal
 		ban[:,0] = 0.1*np.ones(numBandits) 
 		
-		#TEST- give one of the bandits an actual advantage
+		#TEST- give one of the bandits a starting advantage
 		# ban[0,0] = 0.4 
 		
 		#randomize each bandit
 		# ban[:,0] = 0.5*np.random.rand(numBandits)
 
-		#linear space bandits
+		#linear spaced bandits
 		# ban[:,0] = (np.arange(0,numBandits) / (numBandits))
 
 		ban[:,1] = initialEst #set the initial estimate of each bandit for SA case
 		ban[:,3] = initialEst #set the initial estimate of each bandit for WA case
-		historyWA = np.zeros(1)
-		historySA = np.zeros(1)
+		
+		# historyWA = np.zeros(1)
+		# historySA = np.zeros(1)
+		historyWA = np.zeros(runLen)
+		historySA = np.zeros(runLen)
+
 
 		step = 0
 		while step < (runLen - 1):
+			# print('step = ', step)
 
 			rand = np.random.rand()
 			#Greedy
@@ -111,16 +104,10 @@ if __name__ == "__main__":
 				else:
 					choiceWA = bestWA[np.random.randint(len(bestWA))][0]
 
-				color = 'b'
-
-
 			#Not Greedy -pick random
 			else:
 				choiceSA = np.random.randint(numBandits)
 				choiceWA = np.random.randint(numBandits)
-				# color = 'r'
-				color = 'w'
-				# print('random trial')
 
 			#record if methods are chosing the optimal bandit
 			if choiceWA == np.argmax(ban[:,0]):
@@ -140,7 +127,8 @@ if __name__ == "__main__":
 			
 			RSA = banSTD*np.random.randn() + ban[choiceSA,0]
 
-			historySA = np.append(historySA,RSA)
+			# historySA = np.append(historySA,RSA)
+			historySA[step] = RSA
 
 			#bandit has not been picked by SA method yet
 			if ban[choiceSA,2] == 0:
@@ -168,18 +156,21 @@ if __name__ == "__main__":
 			ban[choiceWA,3] = ban[choiceWA,3] + stepSizeWA*(RWA - ban[choiceWA,3]) #update estimate of reward for WA
 			# historyWA = np.append(historyWA,ban[choiceWA,3]) #store what it thinks % succss currently is 
 			# historyWA = np.append(historyWA,numSuccWA/(step+1))	#store actual cumulative success is
-			historyWA = np.append(historyWA,RWA)
+
+
+			# historyWA = np.append(historyWA,RWA)
+			historyWA[step] = RWA
 			# print('historyWA ', historyWA)
 
 
 			#walk prob of success for each bandit
 			ban[:,0] = ban[:,0] + walkDist*np.random.randn(numBandits)
 			#make sure no probability is less than 0
-			ban[ban[:,0] < 0] = 0
+			# ban[ban[:,0] < 0] = 0
 			#make sure probability of success is never more than 1 by setting soft cap on probability
 			# ban[ban[:,0] > 0.5,0] = ban[ban[:,0] > 0.5,0] - ban[ban[:,0] > 0.5,0]**4
 			#hard cap
-			ban[ban[:,0] > 0.9] = ban[ban[:,0] > 0.9] * 0.9
+			# ban[ban[:,0] > 0.9] = ban[ban[:,0] > 0.9] * 0.9
 
 
 			#update bandit history (used for display)
@@ -256,7 +247,10 @@ if __name__ == "__main__":
 		# print(ban)
 		run += 1
 	
-	np.save('wa_pt25.npy',cumWA)
-	np.save('waOpt_pt25.npy',100*np.mean(optWA[:,:run]))
-	plt.savefig('2_5_Monte_Carlo.png')
+	np.save('wa_pt5.npy',cumWA)
+	np.save('sa.npy',cumSA)
+	np.save('waOpt_pt5.npy',100*np.mean(optWA[:,:run]))
+	np.save('saOpt.npy',100*np.mean(optSA[:,:run]))
+
+	# plt.savefig('2_5_Monte_Carlo.png')
 	sleep(5)
