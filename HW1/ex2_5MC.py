@@ -18,7 +18,7 @@ if __name__ == "__main__":
 	numBandits = 10
 	initialEst = 0.5 #higher value will make greedy algo search more
 	eps = 0.1 #set epsilon param
-	stepSizeWA = 0.5 #weighted average step size
+	stepSizeWA = 1 #weighted average step size
 	walkDist = 0.01
 	runLen = 10000
 	numRuns = 2000
@@ -80,7 +80,6 @@ if __name__ == "__main__":
 
 		step = 0
 		while step < (runLen - 1):
-			# print('step = ', step)
 
 			rand = np.random.rand()
 			#Greedy
@@ -225,8 +224,6 @@ if __name__ == "__main__":
 		#average all nonzero outcomes and graph
 		cumWA = np.mean(wa[:,:run], axis = 1)
 		cumSA = np.mean(sa[:,:run], axis = 1)
-		
-
 
 		if run % 10 == 0:
 			WAPlot, = ax1.plot(cumWA, color = 'b', lw = 0.5)
@@ -247,10 +244,10 @@ if __name__ == "__main__":
 		# print(ban)
 		run += 1
 	
-	np.save('wa_pt5.npy',cumWA)
-	np.save('sa.npy',cumSA)
-	np.save('waOpt_pt5.npy',100*np.mean(optWA[:,:run]))
-	np.save('saOpt.npy',100*np.mean(optSA[:,:run]))
+	np.save('wa_1.npy',cumWA)
+	# np.save('sa.npy',cumSA)
+	np.save('waOpt_1.npy',100*np.mean(optWA[:,:run]))
+	# np.save('saOpt.npy',100*np.mean(optSA[:,:run]))
 
 	# plt.savefig('2_5_Monte_Carlo.png')
 	sleep(5)
