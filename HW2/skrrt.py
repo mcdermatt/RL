@@ -6,7 +6,6 @@ from matplotlib import pyplot as plt
 class road:
 
 	mapSize = 30
-	# mapSize = 30 #default
 
 	def __init__(self,imgFile,mapSize = mapSize):
 		#set up base map image
@@ -34,7 +33,7 @@ class road:
 			row += 1
 
 		#init states var
-		self.states = np.zeros([mapSize,mapSize,5])
+		self.states = np.zeros([mapSize,mapSize,5,5])
 
 		#get args of points on road
 		self.onRoad = np.argwhere(self.gw == 0) 
@@ -53,17 +52,33 @@ class road:
 		#draw base map image
 		plt.imshow(self.map, cmap = 'gray', interpolation = 'bicubic')
 	
+		#make vx and vy display on graph
+		self.vx = 0
+		self.vy = 0
+		self.vxtxt = plt.text(10,75,"Vx = %i" %self.vx)
+		self.vytxt = plt.text(10,125,"Vy = %i" %self.vy)
+
+		#init starting policy
+		self.pi = np.random.rand(mapSize,mapSize,5,5,2)
+		self.pi[self.pi < 0.33] = -1
+		self.pi[(self.pi < 0.66) & (self.pi > 0.33)] = 0
+		self.pi[self.pi > 0.66] = 1
+		# print(self.pi)
 
 	def draw_map(self):
 
-		
+		self.vxtxt.set_text("Vx = %i" %self.vx)
+		self.vytxt.set_text("Vy = %i" %self.vy)
+
+		#draw base map image
+		# plt.imshow(self.map, cmap = 'gray', interpolation = 'bicubic')		
 
 		#draw grid world
 		# plt.plot(self.onRoad[:,1]* 1000/ self.mapSize,self.onRoad[:,0]* 1000/ self.mapSize,'b.')
 		# plt.plot(self.offRoad[:,1]* 1000/ self.mapSize,self.offRoad[:,0]* 1000/ self.mapSize,'r.')
 		# plt.plot(self.onStart[:,1]* 1000/ self.mapSize,self.onStart[:,0]* 1000/ self.mapSize,'g.')		
 		# plt.plot(self.onFinish[:,1]* 1000/ self.mapSize,self.onFinish[:,0]* 1000/ self.mapSize,'k.')
-		pass
+		# pass
 
 	def evaluation(self):
 		'''evaluation step of policy improvement'''
@@ -80,28 +95,49 @@ class road:
 		plt.pause(0.1)
 		plt.draw()
 
+		#state transitions
+
 if __name__ == "__main__":
 
 	mapFile = "track1.png"
 	mapSize = 30
-	map = road(mapFile, mapSize)
+	Map = road(mapFile, mapSize)
 	
 	#test moving car
 	#start at random point in atStart
-	print(map.onStart)
-	
+	pos = Map.onStart[np.random.randint(0,len(Map.onStart))]
+	# print("pos = ", pos)
+	history = [] #append to this to discount rewards
 
 	runLen = 15
 	step = 0
 	while step < runLen:
 
-		pos = map.onStart[np.random.randint(0,len(map.onStart))]
+		Map.vx = int(Map.vx + Map.pi[pos[1], pos[0], Map.vx, Map.vy, 0])
+		Map.vy = int(Map.vy + Map.pi[pos[1], pos[0], Map.vx, Map.vy, 1])
+
+		#saturate velocity
+		if Map.vx > 5:
+			Map.vx = 0
+		if Map.vx < 0:
+			Map.vx = 0
+		if Map.vy > 0:
+			Map.vy = 0
+		if Map.vy < -5 :
+			Map.vy = -5
+
+		vxlast = Map.vx
+		vylast = Map.vy
+	
+		#TODO - do I really need pos variable? should be just using first two elements of Map?
+		pos[1] = pos[1] + Map.vx
+		pos[0] = pos[0] + Map.vy 
 		car, = plt.plot(pos[1] * 1000/ mapSize, pos[0] * 1000 / mapSize,'bo')
 		
-		map.update()
+		Map.update()
 		car.remove()
 		step += 1
 	
 
-	np.savetxt('states.txt',map.states[:,:,0],fmt='%.0e')
+	np.savetxt('states.txt',Map.states[:,:,0,0],fmt='%.0e')
 	# print(map.states)
