@@ -73,12 +73,9 @@ class road:
 
 		#init starting policy
 		self.pi = np.random.rand(mapSize,mapSize,5,5,2)
-		# self.pi[self.pi < 0.33] = -1
-		# self.pi[(self.pi < 0.66) & (self.pi > 0.33)] = 0 
-		# self.pi[self.pi > 0.66] = 1
-
-		self.pi[self.pi < 0.5] = -1
-		self.pi[self.pi > 0.5] = 1
+		self.pi[self.pi < 0.33] = -1
+		self.pi[(self.pi < 0.66) & (self.pi > 0.33)] = 0 
+		self.pi[self.pi > 0.66] = 1
 
 		self.pos = np.zeros(2)
 
@@ -115,6 +112,7 @@ class road:
 
 	def restart(self):
 		"""go back to start"""
+		print("Restarting")
 		self.vx = 0
 		self.vy = 0
 		self.pos = Map.onStart[np.random.randint(0,len(Map.onStart))]
@@ -135,9 +133,9 @@ if __name__ == "__main__":
 	
 	#test moving car
 	#start at random point in atStart
-	Map.pos = Map.onStart[np.random.randint(0,len(Map.onStart))]
-	# print("pos = ", pos)
-	history = [] #append to this to discount rewards
+	# Map.pos = Map.onStart[np.random.randint(0,len(Map.onStart))]
+	Map.restart()
+	history = np.zeros([1,4]) #append to this to discount rewards
 
 	runLen = 50
 	step = 0
@@ -153,7 +151,7 @@ if __name__ == "__main__":
 			Map.vx = 0
 		if Map.vy > 0:
 			Map.vy = 0
-		if Map.vy < -5 :
+		if Map.vy < -5:
 			Map.vy = -5
 
 		vxlast = Map.vx
@@ -163,12 +161,17 @@ if __name__ == "__main__":
 		Map.pos[0] = Map.pos[0] + Map.vy 
 		car, = plt.plot(Map.pos[1] * 1000/ mapSize, Map.pos[0] * 1000 / mapSize,'bo')
 		
+		history = np.append(np.array([[Map.pos[1],Map.pos[0],Map.vx,Map.vy]]),history, axis = 0)
+
 		#check if car has left boundary of track
 		for i in Map.offRoad:
 			if np.all(Map.pos == i):
 				print("we offRoad")
 				Map.restart()
-		#check if car is stuck at start
+		#check if car is stuck
+		if (step > 3):
+			if np.array_equal(history[1],history[4]):
+				Map.restart()
 
 		#punish by 1 for each step until end is reached
 		Map.reward -= 1
@@ -178,5 +181,5 @@ if __name__ == "__main__":
 		step += 1
 	
 
-	np.savetxt('states.txt',Map.states[:,:,0,0],fmt='%.0e')
+	np.savetxt('pi.txt',Map.pi[:,:,0,0,1],fmt='%.0e')
 	# print(map.states)
