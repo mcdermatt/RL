@@ -2,6 +2,14 @@ import numpy as np
 import cv2
 from matplotlib import pyplot as plt
 
+#TODO:
+# make arrows to display policy
+# implement initial random policy
+# backup w/ discount factor
+# draw car sprite
+# sense if car has left track
+# save good policy to external file
+# add noise
 
 class road:
 
@@ -11,6 +19,7 @@ class road:
 		#set up base map image
 		self.mapSize = mapSize
 		self.map = cv2.imread(mapFile)
+		self.sprite = cv2.imread("car.png")
 		scale_percent = 100 # percent of original size
 		width = int(self.map.shape[1] * scale_percent / 100)
 		height = int(self.map.shape[0] * scale_percent / 100)
@@ -51,25 +60,33 @@ class road:
 
 		#draw base map image
 		plt.imshow(self.map, cmap = 'gray', interpolation = 'bicubic')
-	
+		# plt.imshow(self.sprite)
+		plt.xticks([]), plt.yticks([])
+
 		#make vx and vy display on graph
 		self.vx = 0
 		self.vy = 0
+		self.reward = 0 #reward for current trial
 		self.vxtxt = plt.text(10,75,"Vx = %i" %self.vx)
 		self.vytxt = plt.text(10,125,"Vy = %i" %self.vy)
+		self.rewardtxt = plt.text(700,75, "Reward = %i" %self.reward)
 
 		#init starting policy
 		self.pi = np.random.rand(mapSize,mapSize,5,5,2)
-		self.pi[self.pi < 0.33] = -1
-		self.pi[(self.pi < 0.66) & (self.pi > 0.33)] = 0
-		self.pi[self.pi > 0.66] = 1
-		# print(self.pi)
+		# self.pi[self.pi < 0.33] = -1
+		# self.pi[(self.pi < 0.66) & (self.pi > 0.33)] = 0 
+		# self.pi[self.pi > 0.66] = 1
+
+		self.pi[self.pi < 0.5] = -1
+		self.pi[self.pi > 0.5] = 1
+
+		self.pos = np.zeros(2)
 
 	def draw_map(self):
 
 		self.vxtxt.set_text("Vx = %i" %self.vx)
 		self.vytxt.set_text("Vy = %i" %self.vy)
-
+		self.rewardtxt.set_text("Reward = %i" %self.reward)
 		#draw base map image
 		# plt.imshow(self.map, cmap = 'gray', interpolation = 'bicubic')		
 
@@ -90,8 +107,21 @@ class road:
 
 		return
 
+	def draw_car(self):
+		#make temporary array to hold car sprite, (add car sprite to zeros)
+		# cartemp = np.zeros([1000,1000,3])
+		# cartemp[self.pos[1]:self.pos[1]+100,self.pos[0]:self.pos[0]+100] = self.sprite
+		plt.imshow(self.sprite)
+
+	def restart(self):
+		"""go back to start"""
+		self.vx = 0
+		self.vy = 0
+		self.pos = Map.onStart[np.random.randint(0,len(Map.onStart))]
+
 	def update(self):
 		self.draw_map()
+		# self.draw_car()	
 		plt.pause(0.1)
 		plt.draw()
 
@@ -105,20 +135,20 @@ if __name__ == "__main__":
 	
 	#test moving car
 	#start at random point in atStart
-	pos = Map.onStart[np.random.randint(0,len(Map.onStart))]
+	Map.pos = Map.onStart[np.random.randint(0,len(Map.onStart))]
 	# print("pos = ", pos)
 	history = [] #append to this to discount rewards
 
-	runLen = 15
+	runLen = 50
 	step = 0
 	while step < runLen:
 
-		Map.vx = int(Map.vx + Map.pi[pos[1], pos[0], Map.vx, Map.vy, 0])
-		Map.vy = int(Map.vy + Map.pi[pos[1], pos[0], Map.vx, Map.vy, 1])
+		Map.vx = int(Map.vx + Map.pi[Map.pos[1], Map.pos[0], Map.vx, Map.vy, 0])
+		Map.vy = int(Map.vy + Map.pi[Map.pos[1], Map.pos[0], Map.vx, Map.vy, 1])
 
 		#saturate velocity
-		if Map.vx > 5:
-			Map.vx = 0
+		if Map.vx > 4:
+			Map.vx = 4
 		if Map.vx < 0:
 			Map.vx = 0
 		if Map.vy > 0:
@@ -129,11 +159,20 @@ if __name__ == "__main__":
 		vxlast = Map.vx
 		vylast = Map.vy
 	
-		#TODO - do I really need pos variable? should be just using first two elements of Map?
-		pos[1] = pos[1] + Map.vx
-		pos[0] = pos[0] + Map.vy 
-		car, = plt.plot(pos[1] * 1000/ mapSize, pos[0] * 1000 / mapSize,'bo')
+		Map.pos[1] = Map.pos[1] + Map.vx
+		Map.pos[0] = Map.pos[0] + Map.vy 
+		car, = plt.plot(Map.pos[1] * 1000/ mapSize, Map.pos[0] * 1000 / mapSize,'bo')
 		
+		#check if car has left boundary of track
+		for i in Map.offRoad:
+			if np.all(Map.pos == i):
+				print("we offRoad")
+				Map.restart()
+		#check if car is stuck at start
+
+		#punish by 1 for each step until end is reached
+		Map.reward -= 1
+
 		Map.update()
 		car.remove()
 		step += 1
