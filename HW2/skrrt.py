@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 from matplotlib import pyplot as plt
+import matplotlib.patches as mpatches
 
 #TODO:
 # make arrows to display policy
@@ -10,12 +11,18 @@ from matplotlib import pyplot as plt
 # sense if car has left track
 # save good policy to external file
 # add noise
+# add seed for random initial policy
 
 class road:
 
 	mapSize = 30
 
-	def __init__(self,imgFile,mapSize = mapSize):
+	def __init__(self,imgFile,mapSize = mapSize, displayOn = True):
+		
+		#set up plot
+		self.fig = plt.figure(0)
+		self.ax = self.fig.add_subplot()
+
 		#set up base map image
 		self.mapSize = mapSize
 		self.map = cv2.imread(mapFile)
@@ -78,6 +85,8 @@ class road:
 		self.pi[self.pi > 0.66] = 1
 
 		self.pos = np.zeros(2)
+		# self.pol = plt.arrow(0,0,0,0)
+		self.patches = []
 
 	def draw_map(self):
 
@@ -92,7 +101,23 @@ class road:
 		# plt.plot(self.offRoad[:,1]* 1000/ self.mapSize,self.offRoad[:,0]* 1000/ self.mapSize,'r.')
 		# plt.plot(self.onStart[:,1]* 1000/ self.mapSize,self.onStart[:,0]* 1000/ self.mapSize,'g.')		
 		# plt.plot(self.onFinish[:,1]* 1000/ self.mapSize,self.onFinish[:,0]* 1000/ self.mapSize,'k.')
-		# pass
+
+	def draw_policy(self):
+		"""draw policy for current speeds"""
+
+		self.ax.patches = []
+
+		for i in np.append(self.onRoad,self.onStart,axis = 0):
+			#draw arrow (x, y, dx, dy, **kwargs)
+			# plt.arrow(i[1] * 1000/ self.mapSize ,i[0] * 1000/ self.mapSize ,self.pi[i[1],i[0],self.vx,self.vy,0] * 500/ self.mapSize ,self.pi[i[1],i[0],self.vx,self.vy,1] * 500/ self.mapSize, color = 'blue')
+			arrow = mpatches.Arrow(i[1] * 1000/ self.mapSize ,i[0] * 1000/ self.mapSize ,self.pi[i[1],i[0],self.vx,self.vy,0] * 500/ self.mapSize ,self.pi[i[1],i[0],self.vx,self.vy,1] * 500/ self.mapSize, width = 30)
+			
+			# arrow = mpatches.FancyArrowPatch((i[1] * 1000/ self.mapSize ,i[0] * 1000/ self.mapSize), (self.pi[i[1],i[0],self.vx,self.vy,0] * 500/ self.mapSize ,self.pi[i[1],i[0],self.vx,self.vy,1] * 500/ self.mapSize))
+			self.ax.add_patch(arrow)
+
+		#test
+		# arrow = mpatches.Arrow(100,100,100,100, width = 100)
+		# self.ax.add_patch(arrow)
 
 	def evaluation(self):
 		'''evaluation step of policy improvement'''
@@ -135,11 +160,14 @@ if __name__ == "__main__":
 	#start at random point in atStart
 	# Map.pos = Map.onStart[np.random.randint(0,len(Map.onStart))]
 	Map.restart()
+	Map.draw_policy()
+
 	history = np.zeros([1,4]) #append to this to discount rewards
 
-	runLen = 50
+	runLen = 100
 	step = 0
-	while step < runLen:
+	fin = False
+	while fin == False:
 
 		Map.vx = int(Map.vx + Map.pi[Map.pos[1], Map.pos[0], Map.vx, Map.vy, 0])
 		Map.vy = int(Map.vy + Map.pi[Map.pos[1], Map.pos[0], Map.vx, Map.vy, 1])
@@ -166,16 +194,27 @@ if __name__ == "__main__":
 		#check if car has left boundary of track
 		for i in Map.offRoad:
 			if np.all(Map.pos == i):
-				print("we offRoad")
 				Map.restart()
 		#check if car is stuck
 		if (step > 3):
 			if np.array_equal(history[1],history[4]):
+				Map.reward -= 10
 				Map.restart()
 
 		#punish by 1 for each step until end is reached
 		Map.reward -= 1
 
+		#stop if running for too long - Policy will never reach finish(?)
+		if step > runLen:
+			break
+
+		#stop if car reaches finish line - move to end of loop
+		for i in Map.onFinish:
+			if np.all(Map.pos == i):
+				print("reached finish")
+				fin = True
+
+		Map.draw_policy()
 		Map.update()
 		car.remove()
 		step += 1
