@@ -79,7 +79,7 @@ class road:
 		self.rewardtxt = plt.text(700,75, "Reward = %i" %self.reward)
 
 		#init starting policy
-		np.random.seed(4)
+		# np.random.seed(4)
 		self.pi = np.random.rand(mapSize,mapSize,5,5,2)
 		self.pi[self.pi < 0.33] = -1
 		self.pi[(self.pi < 0.66) & (self.pi > 0.33)] = 0 
@@ -120,8 +120,8 @@ class road:
 	def evaluate(self, visual = False):
 		'''evaluation step of policy improvement'''
 
+		self.reward = 0
 		self.history = np.zeros([1,4]) #append to this to discount rewards
-		mapSize = 30
 		runLen = 100
 		step = 0
 		fin = False
@@ -145,7 +145,7 @@ class road:
 		
 			self.pos[1] = self.pos[1] + self.vx
 			self.pos[0] = self.pos[0] + self.vy 
-			car, = plt.plot(Map.pos[1] * 1000/ mapSize, self.pos[0] * 1000 / mapSize,'bo')
+			car, = plt.plot(self.pos[1] * 1000/ mapSize, self.pos[0] * 1000 / mapSize,'bo')
 			
 			self.history = np.append(np.array([[self.pos[1],self.pos[0],self.vx,self.vy]]),self.history, axis = 0)
 
@@ -197,7 +197,7 @@ class road:
 		# print("Restarting")
 		self.vx = 0
 		self.vy = 0
-		self.pos = Map.onStart[np.random.randint(0,len(Map.onStart))]
+		self.pos = self.onStart[np.random.randint(0,len(self.onStart))]
 
 	def update(self):
 		self.draw_map()
@@ -209,7 +209,8 @@ class road:
 
 if __name__ == "__main__":
 
-	mapFile = "track1.png"
+	# mapFile = "track1.png"
+	mapFile = "track2.png"
 	mapSize = 30
 	Map = road(mapFile, mapSize)
 	
@@ -220,8 +221,10 @@ if __name__ == "__main__":
 
 	numRuns = 10
 	run = 0
+	vis = True
+	# vis = False
 	while run < numRuns:
-		r = Map.evaluate(visual = False) 
+		r = Map.evaluate(visual = vis) 
 		print("reward = ", r)
 		run += 1
 	
