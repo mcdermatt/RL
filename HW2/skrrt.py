@@ -79,6 +79,7 @@ class road:
 		self.rewardtxt = plt.text(700,75, "Reward = %i" %self.reward)
 
 		#init starting policy
+		np.random.seed(4)
 		self.pi = np.random.rand(mapSize,mapSize,5,5,2)
 		self.pi[self.pi < 0.33] = -1
 		self.pi[(self.pi < 0.66) & (self.pi > 0.33)] = 0 
@@ -86,7 +87,7 @@ class road:
 
 		self.pos = np.zeros(2)
 		# self.pol = plt.arrow(0,0,0,0)
-		self.patches = []
+		# self.patches = []
 
 	def draw_map(self):
 
@@ -107,6 +108,7 @@ class road:
 
 		self.ax.patches = []
 
+		# for i in self.onRoad:
 		for i in np.append(self.onRoad,self.onStart,axis = 0):
 			#draw arrow (x, y, dx, dy, **kwargs)
 			# plt.arrow(i[1] * 1000/ self.mapSize ,i[0] * 1000/ self.mapSize ,self.pi[i[1],i[0],self.vx,self.vy,0] * 500/ self.mapSize ,self.pi[i[1],i[0],self.vx,self.vy,1] * 500/ self.mapSize, color = 'blue')
@@ -115,16 +117,71 @@ class road:
 			# arrow = mpatches.FancyArrowPatch((i[1] * 1000/ self.mapSize ,i[0] * 1000/ self.mapSize), (self.pi[i[1],i[0],self.vx,self.vy,0] * 500/ self.mapSize ,self.pi[i[1],i[0],self.vx,self.vy,1] * 500/ self.mapSize))
 			self.ax.add_patch(arrow)
 
-		#test
-		# arrow = mpatches.Arrow(100,100,100,100, width = 100)
-		# self.ax.add_patch(arrow)
-
-	def evaluation(self):
+	def evaluate(self, visual = False):
 		'''evaluation step of policy improvement'''
 
-		return
+		self.history = np.zeros([1,4]) #append to this to discount rewards
+		mapSize = 30
+		runLen = 100
+		step = 0
+		fin = False
+		while fin == False:
 
-	def improvement(self):
+			self.vx = int(self.vx + self.pi[self.pos[1], self.pos[0], self.vx, self.vy, 0])
+			self.vy = int(self.vy + self.pi[self.pos[1], self.pos[0], self.vx, self.vy, 1])
+
+			#saturate velocity
+			if self.vx > 4:
+				self.vx = 4
+			if self.vx < 0:
+				self.vx = 0
+			if self.vy > 0:
+				self.vy = 0
+			if self.vy < -5:
+				self.vy = -5
+
+			vxlast = self.vx
+			vylast = self.vy
+		
+			self.pos[1] = self.pos[1] + self.vx
+			self.pos[0] = self.pos[0] + self.vy 
+			car, = plt.plot(Map.pos[1] * 1000/ mapSize, self.pos[0] * 1000 / mapSize,'bo')
+			
+			self.history = np.append(np.array([[self.pos[1],self.pos[0],self.vx,self.vy]]),self.history, axis = 0)
+
+			#check if car has left boundary of track
+			for i in self.offRoad:
+				if np.all(self.pos == i):
+					self.restart()
+			#check if car is stuck
+			if (step > 3):
+				if np.array_equal(self.history[1],self.history[4]):
+					self.reward -= 10
+					self.restart()
+
+			#punish by 1 for each step until end is reached
+			self.reward -= 1
+
+			#stop if running for too long - Policy will never reach finish(?)
+			if step > runLen:
+				break
+
+			#stop if car reaches finish line - move to end of loop
+			for i in self.onFinish:
+				if np.all(self.pos == i):
+					print("Reached Finish!")
+					fin = True
+
+			if visual:
+				self.draw_policy()
+				self.update()
+			car.remove()
+			step += 1
+
+		r = self.reward
+		return(r)
+
+	def improve(self):
 		'''improvement step of policy improvement'''
 
 		return
@@ -137,7 +194,7 @@ class road:
 
 	def restart(self):
 		"""go back to start"""
-		print("Restarting")
+		# print("Restarting")
 		self.vx = 0
 		self.vy = 0
 		self.pos = Map.onStart[np.random.randint(0,len(Map.onStart))]
@@ -145,7 +202,7 @@ class road:
 	def update(self):
 		self.draw_map()
 		# self.draw_car()	
-		plt.pause(0.1)
+		plt.pause(0.01)
 		plt.draw()
 
 		#state transitions
@@ -160,64 +217,14 @@ if __name__ == "__main__":
 	#start at random point in atStart
 	# Map.pos = Map.onStart[np.random.randint(0,len(Map.onStart))]
 	Map.restart()
-	Map.draw_policy()
 
-	history = np.zeros([1,4]) #append to this to discount rewards
-
-	runLen = 100
-	step = 0
-	fin = False
-	while fin == False:
-
-		Map.vx = int(Map.vx + Map.pi[Map.pos[1], Map.pos[0], Map.vx, Map.vy, 0])
-		Map.vy = int(Map.vy + Map.pi[Map.pos[1], Map.pos[0], Map.vx, Map.vy, 1])
-
-		#saturate velocity
-		if Map.vx > 4:
-			Map.vx = 4
-		if Map.vx < 0:
-			Map.vx = 0
-		if Map.vy > 0:
-			Map.vy = 0
-		if Map.vy < -5:
-			Map.vy = -5
-
-		vxlast = Map.vx
-		vylast = Map.vy
+	numRuns = 10
+	run = 0
+	while run < numRuns:
+		r = Map.evaluate(visual = False) 
+		print("reward = ", r)
+		run += 1
 	
-		Map.pos[1] = Map.pos[1] + Map.vx
-		Map.pos[0] = Map.pos[0] + Map.vy 
-		car, = plt.plot(Map.pos[1] * 1000/ mapSize, Map.pos[0] * 1000 / mapSize,'bo')
-		
-		history = np.append(np.array([[Map.pos[1],Map.pos[0],Map.vx,Map.vy]]),history, axis = 0)
-
-		#check if car has left boundary of track
-		for i in Map.offRoad:
-			if np.all(Map.pos == i):
-				Map.restart()
-		#check if car is stuck
-		if (step > 3):
-			if np.array_equal(history[1],history[4]):
-				Map.reward -= 10
-				Map.restart()
-
-		#punish by 1 for each step until end is reached
-		Map.reward -= 1
-
-		#stop if running for too long - Policy will never reach finish(?)
-		if step > runLen:
-			break
-
-		#stop if car reaches finish line - move to end of loop
-		for i in Map.onFinish:
-			if np.all(Map.pos == i):
-				print("reached finish")
-				fin = True
-
-		Map.draw_policy()
-		Map.update()
-		car.remove()
-		step += 1
 	
 
 	np.savetxt('pi.txt',Map.pi[:,:,0,0,1],fmt='%.0e')
