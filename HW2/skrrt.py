@@ -48,20 +48,12 @@ class road:
 			col = 0
 			row += 1
 
-		#init states var
-		self.states = np.zeros([mapSize,mapSize,5,5])
-
 		#get args of points on road
 		self.onRoad = np.argwhere(self.gw == 0) 
-
 		#get args of points not on road
 		self.offRoad = np.argwhere(self.gw == 255)
-		#set large negative reward for points off of road
-		self.states[self.offRoad[:,0],self.offRoad[:,1],:] = -50
-
 		#get args of start points
 		self.onStart = np.argwhere((self.gw < 127) & (self.gw > 0)) 
-
 		#get args of end points
 		self.onFinish = np.argwhere((self.gw >= 127) & (self.gw < 255)) 
 
@@ -78,8 +70,14 @@ class road:
 		self.vytxt = plt.text(10,125,"Vy = %i" %self.vy)
 		self.rewardtxt = plt.text(700,75, "Reward = %i" %self.reward)
 
+		#TODO fix this
+		#init expected return - give everything really bad values to start?
+		self.q_pi = -1000 * np.ones([mapSize,mapSize,5,5,3,3,2]) #(posx,posy,vx,vy,accelerationX, accelerationY, average reward & number of times at state so far)
+		self.q_pi[:,:,:,:,:,:,0] = 0
+		self.q_pi[:,:,:,:,:,:,1] = 1
+
 		#init starting policy
-		# np.random.seed(4)
+		np.random.seed(4)
 		self.pi = np.random.rand(mapSize,mapSize,5,5,2)
 		self.pi[self.pi < 0.33] = -1
 		self.pi[(self.pi < 0.66) & (self.pi > 0.33)] = 0 
@@ -178,11 +176,24 @@ class road:
 			car.remove()
 			step += 1
 
+
+		#estimate q_pi(s,a) -> expected return from policy pi of action a at state s
+		for h in self.history:
+			#add reward to average in q_pi #TODO- make this less absurd looking
+			self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,0] = (self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,0] + self.reward) / self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,1]
+			self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,1] += 1 
+
 		r = self.reward
 		return(r)
 
 	def improve(self):
 		'''improvement step of policy improvement'''
+
+		#average returns observed after state is visited- should converge to expected value
+		#use first-visit MC
+
+		#pi -> greedy(Q)
+
 
 		return
 
@@ -210,7 +221,7 @@ class road:
 if __name__ == "__main__":
 
 	# mapFile = "track1.png"
-	mapFile = "track2.png"
+	mapFile = "track1.png"
 	mapSize = 30
 	Map = road(mapFile, mapSize)
 	
@@ -221,14 +232,12 @@ if __name__ == "__main__":
 
 	numRuns = 10
 	run = 0
-	vis = True
-	# vis = False
+	# vis = True
+	vis = False
 	while run < numRuns:
 		r = Map.evaluate(visual = vis) 
 		print("reward = ", r)
+		# print(Map.history)
 		run += 1
-	
-	
 
 	np.savetxt('pi.txt',Map.pi[:,:,0,0,1],fmt='%.0e')
-	# print(map.states)
