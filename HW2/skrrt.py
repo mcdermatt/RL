@@ -12,6 +12,7 @@ import matplotlib.patches as mpatches
 # save good policy to external file
 # add noise
 # add seed for random initial policy
+ #TODO- randomize pi via epsilon-greedy
 
 class road:
 
@@ -73,8 +74,8 @@ class road:
 		#TODO fix this
 		#init expected return - give everything really bad values to start?
 		self.q_pi = -1000 * np.ones([mapSize,mapSize,5,5,3,3,2]) #(posx,posy,vx,vy,accelerationX, accelerationY, average reward & number of times at state so far)
-		self.q_pi[:,:,:,:,:,:,0] = 0
-		self.q_pi[:,:,:,:,:,:,1] = 1
+		self.q_pi[6] = 0 #DEBUG -not sure if these are right
+		self.q_pi[7] = 1
 
 		#init starting policy
 		np.random.seed(4)
@@ -86,6 +87,8 @@ class road:
 		self.pos = np.zeros(2)
 		# self.pol = plt.arrow(0,0,0,0)
 		# self.patches = []
+
+		self.restart()
 
 	def draw_map(self):
 
@@ -115,18 +118,30 @@ class road:
 			# arrow = mpatches.FancyArrowPatch((i[1] * 1000/ self.mapSize ,i[0] * 1000/ self.mapSize), (self.pi[i[1],i[0],self.vx,self.vy,0] * 500/ self.mapSize ,self.pi[i[1],i[0],self.vx,self.vy,1] * 500/ self.mapSize))
 			self.ax.add_patch(arrow)
 
-	def evaluate(self, visual = False):
+	def evaluate(self,eps = 0.1, visual = False):
 		'''evaluation step of policy improvement'''
 
 		self.reward = 0
-		self.history = np.zeros([1,4]) #append to this to discount rewards
+		self.history = np.zeros([1,6]) #(posx, posy, vx, vy, ax, ay)
 		runLen = 100
 		step = 0
 		fin = False
 		while fin == False:
 
-			self.vx = int(self.vx + self.pi[self.pos[1], self.pos[0], self.vx, self.vy, 0])
-			self.vy = int(self.vy + self.pi[self.pos[1], self.pos[0], self.vx, self.vy, 1])
+			randy = np.random.rand()
+			#greedy
+			if randy > eps:
+				ax = self.pi[self.pos[1], self.pos[0], self.vx, self.vy, 0]
+				ay = self.pi[self.pos[1], self.pos[0], self.vx, self.vy, 1]
+				self.vx = int(self.vx + ax)
+				self.vy = int(self.vy + ay)
+			#exploratory
+			if randy < eps:
+				ax = int(np.random.randint(3) - 1) #need to be careful with how I index these the (-1) could get a lil sus
+				ay = int(np.random.randint(3) - 1)
+				self.vx = self.vx + ax
+				self.vy = self.vy + ay
+				#still need to record in history what action was taken
 
 			#saturate velocity
 			if self.vx > 4:
@@ -138,23 +153,24 @@ class road:
 			if self.vy < -5:
 				self.vy = -5
 
-			vxlast = self.vx
-			vylast = self.vy
-		
-			self.pos[1] = self.pos[1] + self.vx
-			self.pos[0] = self.pos[0] + self.vy 
-			car, = plt.plot(self.pos[1] * 1000/ mapSize, self.pos[0] * 1000 / mapSize,'bo')
-			
-			self.history = np.append(np.array([[self.pos[1],self.pos[0],self.vx,self.vy]]),self.history, axis = 0)
-
 			#check if car has left boundary of track
 			for i in self.offRoad:
 				if np.all(self.pos == i):
 					self.restart()
+			if self.pos[0] > self.mapSize: #beyond boundaries of map
+				self.restart()
+			if self.pos[1] > self.mapSize: #beyond boundaries of map
+				self.restart()
+
+			self.pos[1] = self.pos[1] + self.vx
+			self.pos[0] = self.pos[0] + self.vy 
+
+			self.history = np.append(np.array([[self.pos[1],self.pos[0],self.vx,self.vy,ax,ay]]),self.history, axis = 0)
+			
 			#check if car is stuck
 			if (step > 3):
 				if np.array_equal(self.history[1],self.history[4]):
-					self.reward -= 10
+					# self.reward -= 10
 					self.restart()
 
 			#punish by 1 for each step until end is reached
@@ -162,29 +178,31 @@ class road:
 
 			#stop if running for too long - Policy will never reach finish(?)
 			if step > runLen:
+				# print("step limit hit")
 				break
 
 			#stop if car reaches finish line - move to end of loop
 			for i in self.onFinish:
 				if np.all(self.pos == i):
-					print("Reached Finish!")
+					# print("Reached Finish!")
+					self.restart()
 					fin = True
 
 			if visual:
 				self.draw_policy()
+				car, = plt.plot(self.pos[1] * 1000/ mapSize, self.pos[0] * 1000 / mapSize,'bo')
 				self.update()
-			car.remove()
+				car.remove()
 			step += 1
 
 
 		#estimate q_pi(s,a) -> expected return from policy pi of action a at state s
 		for h in self.history:
-			#add reward to average in q_pi #TODO- make this less absurd looking
+			#TODO- make this less absurd looking
+			#update average value of state-action pair
 			self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,0] = (self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,0] + self.reward) / self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,1]
+			#increment count for number of times state has been reached
 			self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,1] += 1 
-
-		r = self.reward
-		return(r)
 
 	def improve(self):
 		'''improvement step of policy improvement'''
@@ -193,7 +211,28 @@ class road:
 		#use first-visit MC
 
 		#pi -> greedy(Q)
+		#pi = argmax(q_pi(s,a))
+		
 
+		print(self.q_pi[15,15,0,0,:,:,0])
+
+		# xpos = 0
+		# ypos = 0
+		# vx = 0
+		# vy = 0
+		# while xpos < self.mapSize:
+		# 	while ypos < self.mapSize:
+		# 		while vx < 5:
+		# 			while vy < 5:
+		# 				#set policy x to whatever acceleration value in q_pi() produces highest argument in
+		# 				# print(self.q_pi[xpos,ypos,vx,vy,:,:,0])
+		# 				# print(np.argmax(self.q_pi[xpos,ypos,vx,vy,:,:,0]))
+		# 				# self.pi[xpos,ypos,vx,vy,0] = np.amax(self.q_pi[xpos,ypos,vx,vy,:,:,0], axis = 0)
+		# 				#set y
+
+		# 			vy = 0
+		# 		vx = 0
+		# 	ypos = 0 
 
 		return
 
@@ -208,6 +247,7 @@ class road:
 		# print("Restarting")
 		self.vx = 0
 		self.vy = 0
+		# print(np.shape(self.onStart))
 		self.pos = self.onStart[np.random.randint(0,len(self.onStart))]
 
 	def update(self):
@@ -216,28 +256,20 @@ class road:
 		plt.pause(0.01)
 		plt.draw()
 
-		#state transitions
-
 if __name__ == "__main__":
 
-	# mapFile = "track1.png"
 	mapFile = "track1.png"
 	mapSize = 30
 	Map = road(mapFile, mapSize)
-	
-	#test moving car
-	#start at random point in atStart
-	# Map.pos = Map.onStart[np.random.randint(0,len(Map.onStart))]
-	Map.restart()
-
-	numRuns = 10
+	numRuns = 250
 	run = 0
-	# vis = True
 	vis = False
+	eps = 0.1
+
 	while run < numRuns:
-		r = Map.evaluate(visual = vis) 
-		print("reward = ", r)
-		# print(Map.history)
+		print("Run #",run)
+		Map.evaluate(eps = eps, visual = vis) 
+		Map.improve()
 		run += 1
 
-	np.savetxt('pi.txt',Map.pi[:,:,0,0,1],fmt='%.0e')
+	# np.savetxt('pi.txt',Map.pi[:,:,0,0,1],fmt='%.0e')
