@@ -14,11 +14,15 @@ import matplotlib.patches as mpatches
 # add seed for random initial policy
  #TODO- randomize pi via epsilon-greedy
 
+ #DEBUG:
+ #fix .onStart[] -
+ #    point is being added to onStart wherever the car leaves the track
+
 class road:
 
 	mapSize = 30
 
-	def __init__(self,imgFile,mapSize = mapSize, displayOn = True):
+	def __init__(self,mapFile,mapSize = mapSize, displayOn = True):
 		
 		#set up plot
 		self.fig = plt.figure(0)
@@ -73,9 +77,9 @@ class road:
 
 		#TODO fix this
 		#init expected return - give everything really bad values to start?
-		self.q_pi = -1000 * np.ones([mapSize,mapSize,5,5,3,3,2]) #(posx,posy,vx,vy,accelerationX, accelerationY, average reward & number of times at state so far)
-		self.q_pi[6] = 0 #DEBUG -not sure if these are right
-		self.q_pi[7] = 1
+		self.q_pi = -10000 * np.ones([mapSize,mapSize,5,5,3,3,2]) #(posx,posy,vx,vy,accelerationX, accelerationY, average reward & number of times at state so far)
+		self.q_pi[:,:,:,:,:,:,0] = 0 #DEBUG -not sure if these are right
+		self.q_pi[:,:,:,:,:,:,1] = 1
 
 		#init starting policy
 		np.random.seed(4)
@@ -112,8 +116,7 @@ class road:
 		# for i in self.onRoad:
 		for i in np.append(self.onRoad,self.onStart,axis = 0):
 			#draw arrow (x, y, dx, dy, **kwargs)
-			# plt.arrow(i[1] * 1000/ self.mapSize ,i[0] * 1000/ self.mapSize ,self.pi[i[1],i[0],self.vx,self.vy,0] * 500/ self.mapSize ,self.pi[i[1],i[0],self.vx,self.vy,1] * 500/ self.mapSize, color = 'blue')
-			arrow = mpatches.Arrow(i[1] * 1000/ self.mapSize ,i[0] * 1000/ self.mapSize ,self.pi[i[1],i[0],self.vx,self.vy,0] * 500/ self.mapSize ,self.pi[i[1],i[0],self.vx,self.vy,1] * 500/ self.mapSize, width = 30)
+			arrow = mpatches.Arrow(i[1] * 1000/ self.mapSize, i[0] * 1000/ self.mapSize ,self.pi[i[1],i[0],self.vx,self.vy,0] * 500/ self.mapSize ,self.pi[i[1],i[0],self.vx,self.vy,1] * 500/ self.mapSize, width = 30)
 			
 			# arrow = mpatches.FancyArrowPatch((i[1] * 1000/ self.mapSize ,i[0] * 1000/ self.mapSize), (self.pi[i[1],i[0],self.vx,self.vy,0] * 500/ self.mapSize ,self.pi[i[1],i[0],self.vx,self.vy,1] * 500/ self.mapSize))
 			self.ax.add_patch(arrow)
@@ -157,9 +160,9 @@ class road:
 			for i in self.offRoad:
 				if np.all(self.pos == i):
 					self.restart()
-			if self.pos[0] > self.mapSize: #beyond boundaries of map
+			if (self.pos[0] >= self.mapSize) or (self.pos[0] < 0): #beyond boundaries of map
 				self.restart()
-			if self.pos[1] > self.mapSize: #beyond boundaries of map
+			if (self.pos[1] >= self.mapSize) or (self.pos[1] < 0): #beyond boundaries of map
 				self.restart()
 
 			self.pos[1] = self.pos[1] + self.vx
@@ -184,7 +187,7 @@ class road:
 			#stop if car reaches finish line - move to end of loop
 			for i in self.onFinish:
 				if np.all(self.pos == i):
-					# print("Reached Finish!")
+					print("Reached Finish! Value = ", self.reward)
 					self.restart()
 					fin = True
 
@@ -214,25 +217,32 @@ class road:
 		#pi = argmax(q_pi(s,a))
 		
 
-		print(self.q_pi[15,15,0,0,:,:,0])
+		# print(self.q_pi[15,15,0,0,:,:,0])
 
-		# xpos = 0
-		# ypos = 0
-		# vx = 0
-		# vy = 0
-		# while xpos < self.mapSize:
-		# 	while ypos < self.mapSize:
-		# 		while vx < 5:
-		# 			while vy < 5:
-		# 				#set policy x to whatever acceleration value in q_pi() produces highest argument in
-		# 				# print(self.q_pi[xpos,ypos,vx,vy,:,:,0])
-		# 				# print(np.argmax(self.q_pi[xpos,ypos,vx,vy,:,:,0]))
-		# 				# self.pi[xpos,ypos,vx,vy,0] = np.amax(self.q_pi[xpos,ypos,vx,vy,:,:,0], axis = 0)
-		# 				#set y
+		xpos = 0
+		ypos = 0
+		vx = 0
+		vy = 0
+		while xpos < self.mapSize:
+			while ypos < self.mapSize:
+				while vx < 5:
+					while vy < 5:
+						#set policy x to whatever acceleration value in q_pi() produces highest argument in
+							# print(self.q_pi[xpos,ypos,vx,vy,:,:,0])
+							# returns 3x3 array for all combos of x and y
 
-		# 			vy = 0
-		# 		vx = 0
-		# 	ypos = 0 
+						#TODO - make this defalut to pi if other values have not been explored yet (I think this is why I was stuck at all zeros)
+						self.pi[xpos,ypos,vx,vy,0] = np.unravel_index(np.argmax(self.q_pi[xpos,ypos,vx,vy,:,:,0]),self.q_pi[xpos,ypos,vx,vy,:,:,0].shape)[1] - 1
+						#set y
+						self.pi[xpos,ypos,vx,vy,1] = np.unravel_index(np.argmax(self.q_pi[xpos,ypos,vx,vy,:,:,0]),self.q_pi[xpos,ypos,vx,vy,:,:,0].shape)[0] - 1
+						vy += 1
+
+					vy = 0
+					vx += 1
+				vx = 0
+				ypos += 1
+			ypos = 0 
+			xpos += 1
 
 		return
 
@@ -261,7 +271,7 @@ if __name__ == "__main__":
 	mapFile = "track1.png"
 	mapSize = 30
 	Map = road(mapFile, mapSize)
-	numRuns = 250
+	numRuns = 10
 	run = 0
 	vis = False
 	eps = 0.1
@@ -270,6 +280,9 @@ if __name__ == "__main__":
 		print("Run #",run)
 		Map.evaluate(eps = eps, visual = vis) 
 		Map.improve()
+		print(Map.onStart)
 		run += 1
+
+	Map.evaluate(eps = eps, visual = True)
 
 	# np.savetxt('pi.txt',Map.pi[:,:,0,0,1],fmt='%.0e')
