@@ -17,6 +17,7 @@ import matplotlib.patches as mpatches
  #DEBUG:
  #fix .onStart[] -
  #    point is being added to onStart wherever the car leaves the track
+# 		- gw not changing
 
 class road:
 
@@ -77,9 +78,8 @@ class road:
 
 		#TODO fix this
 		#init expected return - give everything really bad values to start?
-		self.q_pi = -10000 * np.ones([mapSize,mapSize,5,5,3,3,2]) #(posx,posy,vx,vy,accelerationX, accelerationY, average reward & number of times at state so far)
-		self.q_pi[:,:,:,:,:,:,0] = 0 #DEBUG -not sure if these are right
-		self.q_pi[:,:,:,:,:,:,1] = 1
+		self.q_pi = -50000 * np.ones([mapSize,mapSize,5,5,3,3,2]) #(posx,posy,vx,vy,accelerationX, accelerationY, average reward & number of times at state so far)
+		self.q_pi[:,:,:,:,:,:,1] = 1 #set initial counts to 1
 
 		#init starting policy
 		np.random.seed(4)
@@ -126,10 +126,12 @@ class road:
 
 		self.reward = 0
 		self.history = np.zeros([1,6]) #(posx, posy, vx, vy, ax, ay)
-		runLen = 100
+		runLen = 1000
 		step = 0
 		fin = False
 		while fin == False:
+
+			# print(self.pos)
 
 			randy = np.random.rand()
 			#greedy
@@ -147,8 +149,8 @@ class road:
 				#still need to record in history what action was taken
 
 			#saturate velocity
-			if self.vx > 4:
-				self.vx = 4
+			if self.vx > 5:
+				self.vx = 5
 			if self.vx < 0:
 				self.vx = 0
 			if self.vy > 0:
@@ -159,11 +161,20 @@ class road:
 			#check if car has left boundary of track
 			for i in self.offRoad:
 				if np.all(self.pos == i):
+					self.reward -= 50
+					# self.reward = -1000
 					self.restart()
+					# fin = True
 			if (self.pos[0] >= self.mapSize) or (self.pos[0] < 0): #beyond boundaries of map
+				self.reward -= 50
+				# self.reward = -1000
 				self.restart()
+				# fin = True
 			if (self.pos[1] >= self.mapSize) or (self.pos[1] < 0): #beyond boundaries of map
+				self.reward -= 50
+				# self.reward = -1000
 				self.restart()
+				# fin = True
 
 			self.pos[1] = self.pos[1] + self.vx
 			self.pos[0] = self.pos[0] + self.vy 
@@ -173,8 +184,10 @@ class road:
 			#check if car is stuck
 			if (step > 3):
 				if np.array_equal(self.history[1],self.history[4]):
-					# self.reward -= 10
+					self.reward -= 10
+					# self.reward -1000
 					self.restart()
+					# fin = True
 
 			#punish by 1 for each step until end is reached
 			self.reward -= 1
@@ -202,10 +215,17 @@ class road:
 		#estimate q_pi(s,a) -> expected return from policy pi of action a at state s
 		for h in self.history:
 			#TODO- make this less absurd looking
+			# #update average value of state-action pair
+			# self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,0] = (self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,0] + self.reward) / self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,1]
+			# #increment count for number of times state has been reached
+			# self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,1] += 1 
+
+			#revised
 			#update average value of state-action pair
-			self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,0] = (self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,0] + self.reward) / self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,1]
+			self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),0] = (self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),0] + self.reward) / self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),1]
 			#increment count for number of times state has been reached
-			self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,1] += 1 
+			self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),1] += 1 
+
 
 	def improve(self):
 		'''improvement step of policy improvement'''
@@ -258,7 +278,12 @@ class road:
 		self.vx = 0
 		self.vy = 0
 		# print(np.shape(self.onStart))
-		self.pos = self.onStart[np.random.randint(0,len(self.onStart))]
+
+		#issue with sharing memory
+		# self.pos = self.onStart[np.random.randint(0,len(self.onStart))]
+
+		self.pos[:] = self.onStart[np.random.randint(0,len(self.onStart))]
+		self.pos = self.pos.astype(int)
 
 	def update(self):
 		self.draw_map()
@@ -269,20 +294,24 @@ class road:
 if __name__ == "__main__":
 
 	mapFile = "track1.png"
-	mapSize = 30
+	mapSize = 15
 	Map = road(mapFile, mapSize)
-	numRuns = 10
+	numRuns = 5000
 	run = 0
 	vis = False
 	eps = 0.1
 
 	while run < numRuns:
 		print("Run #",run)
+		# print(np.may_share_memory(Map.onStart,Map.pos))
+		# print(Map.q_pi[15,15,0,0,:,:,0])
+
 		Map.evaluate(eps = eps, visual = vis) 
 		Map.improve()
-		print(Map.onStart)
+		# print(Map.onStart)
 		run += 1
 
-	Map.evaluate(eps = eps, visual = True)
+		if run % 2  == 0:
+			Map.evaluate(eps = eps, visual = True)
 
 	# np.savetxt('pi.txt',Map.pi[:,:,0,0,1],fmt='%.0e')
