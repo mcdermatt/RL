@@ -82,17 +82,17 @@ class road:
 		self.q_pi[:,:,:,:,:,:,1] = 1 #set initial counts to 1
 
 		#init starting policy
-		np.random.seed(4)
+		# np.random.seed(4)
 		self.pi = np.random.rand(mapSize,mapSize,5,5,2)
 		self.pi[self.pi < 0.33] = -1
 		self.pi[(self.pi < 0.66) & (self.pi > 0.33)] = 0 
 		self.pi[self.pi > 0.66] = 1
 
 		self.pos = np.zeros(2)
-		# self.pol = plt.arrow(0,0,0,0)
-		# self.patches = []
 
 		self.restart()
+
+		self.test = 0
 
 	def draw_map(self):
 
@@ -124,9 +124,12 @@ class road:
 	def evaluate(self,eps = 0.1, visual = False):
 		'''evaluation step of policy improvement'''
 
+		self.test += 1
+		print("test var = ", self.test)
+
 		self.reward = 0
 		self.history = np.zeros([1,6]) #(posx, posy, vx, vy, ax, ay)
-		runLen = 1000
+		runLen = 500
 		step = 0
 		fin = False
 		while fin == False:
@@ -149,14 +152,14 @@ class road:
 				#still need to record in history what action was taken
 
 			#saturate velocity
-			if self.vx > 5:
-				self.vx = 5
+			if self.vx >= 5:
+				self.vx = 4
 			if self.vx < 0:
 				self.vx = 0
 			if self.vy > 0:
 				self.vy = 0
-			if self.vy < -5:
-				self.vy = -5
+			if self.vy <= -5:
+				self.vy = -4
 
 			#check if car has left boundary of track
 			for i in self.offRoad:
@@ -194,6 +197,7 @@ class road:
 
 			#stop if running for too long - Policy will never reach finish(?)
 			if step > runLen:
+				self.restart()
 				# print("step limit hit")
 				break
 
@@ -239,6 +243,7 @@ class road:
 
 		# print(self.q_pi[15,15,0,0,:,:,0])
 
+		#indexes not values
 		xpos = 0
 		ypos = 0
 		vx = 0
@@ -251,10 +256,18 @@ class road:
 							# print(self.q_pi[xpos,ypos,vx,vy,:,:,0])
 							# returns 3x3 array for all combos of x and y
 
-						#TODO - make this defalut to pi if other values have not been explored yet (I think this is why I was stuck at all zeros)
-						self.pi[xpos,ypos,vx,vy,0] = np.unravel_index(np.argmax(self.q_pi[xpos,ypos,vx,vy,:,:,0]),self.q_pi[xpos,ypos,vx,vy,:,:,0].shape)[1] - 1
-						#set y
-						self.pi[xpos,ypos,vx,vy,1] = np.unravel_index(np.argmax(self.q_pi[xpos,ypos,vx,vy,:,:,0]),self.q_pi[xpos,ypos,vx,vy,:,:,0].shape)[0] - 1
+						#TODO - pick one at random if more than one max
+						top = np.argwhere(self.q_pi[xpos,ypos,vx,vy,:,:,0] == np.amax(self.q_pi[xpos,ypos,vx,vy,:,:,0])) #get list of all args equal to arg of highest value
+
+						best = top[np.random.randint(len(top))]
+
+						self.pi[xpos,ypos,vx,vy,0] = best[1] - 1
+						self.pi[xpos,ypos,vx,vy,1] = best[0] - 1
+						
+						#kinda worked - 
+						# self.pi[xpos,ypos,vx,vy,0] = np.unravel_index(np.argmax(self.q_pi[xpos,ypos,vx,vy,:,:,0]),self.q_pi[xpos,ypos,vx,vy,:,:,0].shape)[1] - 1
+						# #set y
+						# self.pi[xpos,ypos,vx,vy,1] = np.unravel_index(np.argmax(self.q_pi[xpos,ypos,vx,vy,:,:,0]),self.q_pi[xpos,ypos,vx,vy,:,:,0].shape)[0] - 1
 						vy += 1
 
 					vy = 0
@@ -282,7 +295,10 @@ class road:
 		#issue with sharing memory
 		# self.pos = self.onStart[np.random.randint(0,len(self.onStart))]
 
+		#Actual
 		self.pos[:] = self.onStart[np.random.randint(0,len(self.onStart))]
+		#simplified
+		# self.pos[:] = self.onStart[1]
 		self.pos = self.pos.astype(int)
 
 	def update(self):
@@ -293,25 +309,27 @@ class road:
 
 if __name__ == "__main__":
 
-	mapFile = "track1.png"
-	mapSize = 15
+	mapFile = "track2.png"
+	mapSize = 30
 	Map = road(mapFile, mapSize)
 	numRuns = 5000
 	run = 0
 	vis = False
-	eps = 0.1
+	eps = 0.05
 
 	while run < numRuns:
 		print("Run #",run)
 		# print(np.may_share_memory(Map.onStart,Map.pos))
 		# print(Map.q_pi[15,15,0,0,:,:,0])
 
+		#dynamic epsilon param
+		# eps = 1 / ((run + 1)**0.5)
 		Map.evaluate(eps = eps, visual = vis) 
 		Map.improve()
 		# print(Map.onStart)
 		run += 1
 
-		if run % 2  == 0:
-			Map.evaluate(eps = eps, visual = True)
+		if run % 25  == 0:
+			Map.evaluate(eps = 0, visual = True)
 
-	# np.savetxt('pi.txt',Map.pi[:,:,0,0,1],fmt='%.0e')
+	np.save('pi2.txt',Map.pi)
