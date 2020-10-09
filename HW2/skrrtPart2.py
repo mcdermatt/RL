@@ -8,7 +8,7 @@ class road:
 
 	mapSize = 30
 
-	def __init__(self,mapFile,mapSize = mapSize, displayOn = True):
+	def __init__(self,mapFile,mapSize = mapSize, displayOn = True, wind = 0.1):
 		
 		#set up plot
 		self.fig = plt.figure(0)
@@ -16,6 +16,7 @@ class road:
 
 		#set up base map image
 		self.mapSize = mapSize
+		self.wind = wind
 		self.map = cv2.imread(mapFile)
 		self.sprite = cv2.imread("car.png")
 		scale_percent = 100 # percent of original size
@@ -80,7 +81,7 @@ class road:
 		self.test = 0
 		# self.history = np.zeros([1,6])
 		self.history = np.zeros([1,7])
-		self.discountFactor = 0.8
+		self.discountFactor = 0.25
 
 	def draw_map(self):
 
@@ -122,27 +123,28 @@ class road:
 		fin = False
 		while fin == False:
 
-			# print(self.pos)
-
+			axApparent = 0
+			ayApparent = 0
+			randy = np.random.rand()
+			#greedy
+			if randy > eps:
+				axApparent = self.pi[self.pos[1], self.pos[0], self.vx, self.vy, 0]
+				ayApparent = self.pi[self.pos[1], self.pos[0], self.vx, self.vy, 1]
+			#exploratory
+			if randy < eps:
+				axApparent = int(np.random.randint(3) - 1) #need to be careful with how I index these the (-1) could get a lil sus
+				ayApparent = int(np.random.randint(3) - 1)
+				
 			windy = np.random.rand()
-			if windy < 0.9999:
-				randy = np.random.rand()
-				#greedy
-				if randy > eps:
-					ax = self.pi[self.pos[1], self.pos[0], self.vx, self.vy, 0]
-					ay = self.pi[self.pos[1], self.pos[0], self.vx, self.vy, 1]
-					self.vx = int(self.vx + ax)
-					self.vy = int(self.vy + ay)
-				#exploratory
-				if randy < eps:
-					ax = int(np.random.randint(3) - 1) #need to be careful with how I index these the (-1) could get a lil sus
-					ay = int(np.random.randint(3) - 1)
-					self.vx = self.vx + ax
-					self.vy = self.vy + ay
-					#still need to record in history what action was taken
-			else:
+			if windy > (1- self.wind):
 				ax = 0
 				ay = 0
+			else:
+				ax = axApparent
+				ay = ayApparent
+
+			self.vx = int(self.vx + ax)
+			self.vy = int(self.vy + ay)
 
 			#saturate velocity
 			if self.vx >= 5:
@@ -153,6 +155,7 @@ class road:
 				self.vy = 4
 			if self.vy <= -5:
 				self.vy = -4
+
 
 			self.pos[1] = self.pos[1] + self.vx
 			self.pos[0] = self.pos[0] + self.vy 
@@ -175,13 +178,14 @@ class road:
 				self.restart()
 				# fin = True
 
-			self.history = np.append(np.array([[self.pos[1],self.pos[0],self.vx,self.vy,ax,ay,0]]),self.history, axis = 0)
-			# self.history = np.append(self.history,np.array([[self.pos[1],self.pos[0],self.vx,self.vy,ax,ay,0]]), axis = 0)
+
+			#don't take ax ay - use from policy so that wind messes stuff up
+			self.history = np.append(np.array([[self.pos[1],self.pos[0],self.vx,self.vy,axApparent,ayApparent,0]]),self.history, axis = 0)
 
 			#check if car is stuck
 			if (step > 3):
 				if np.array_equal(self.history[1],self.history[4]):
-					# self.reward -= 10
+					# self.reward -= 50
 					# self.reward -1000
 					self.restart()
 					# fin = True
@@ -345,16 +349,16 @@ if __name__ == "__main__":
 	mapFile = "track5.png"
 	mapSize = 30
 	Map = road(mapFile, mapSize)
-	numRuns = 20000
+	numRuns = 1000
 	run = 0
 	vis = False
-	eps = 0.005
+	eps = 0.05
 
 	while run < numRuns:
 		print("Run #",run)
 		Map.evaluate(eps = eps, visual = vis) 
 		run += 1
-		if run % 100  == 0:
+		if run % 25  == 0:
 			Map.evaluate(eps = eps, visual = True)
 
 	np.save('pi5',Map.pi)

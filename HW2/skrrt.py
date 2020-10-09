@@ -18,7 +18,7 @@ class road:
 
 	mapSize = 30
 
-	def __init__(self,mapFile,mapSize = mapSize, displayOn = True):
+	def __init__(self,mapFile,mapSize = mapSize, displayOn = True, wind = 0.1):
 		
 		#set up plot
 		self.fig = plt.figure(0)
@@ -26,6 +26,7 @@ class road:
 
 		#set up base map image
 		self.mapSize = mapSize
+		self.wind = wind
 		self.map = cv2.imread(mapFile)
 		self.sprite = cv2.imread("car.png")
 		scale_percent = 100 # percent of original size
@@ -147,7 +148,7 @@ class road:
 				ayApparent = int(np.random.randint(3) - 1)
 				
 			windy = np.random.rand()
-			if windy > 0.9999:
+			if windy > (1- self.wind):
 				ax = 0
 				ay = 0
 			else:
@@ -220,7 +221,7 @@ class road:
 
 			if visual:
 				self.draw_policy()
-				car, = plt.plot(self.pos[1] * 1000/ mapSize, self.pos[0] * 1000 / mapSize,'bo')
+				car, = plt.plot(self.pos[1] * 1000/ self.mapSize, self.pos[0] * 1000 / self.mapSize,'bo')
 				self.update()
 				car.remove()
 			step += 1
@@ -376,7 +377,7 @@ if __name__ == "__main__":
 
 	mapFile = "track1.png"
 	mapSize = 30
-	Map = road(mapFile, mapSize)
+	Map = road(mapFile, mapSize, wind = 0)
 	numRuns = 5000
 	run = 0
 	vis = False
@@ -396,7 +397,7 @@ if __name__ == "__main__":
 
 		run += 1
 
-		if run % 1000  == 0:
+		if run % 250  == 0:
 			Map.evaluate(eps = eps, visual = True)
 
-	np.save('pi1_v2_wind',Map.pi)
+	np.save('pi1_v2_no_wind',Map.pi)

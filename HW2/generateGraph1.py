@@ -26,8 +26,6 @@ if __name__ == "__main__":
 	rew = []
 	while run < numRuns:
 		print("Run #",run)
-		# print(np.may_share_memory(Map.onStart,Map.pos))
-		# print(Map.q_pi[15,15,0,0,:,:,0])
 
 		Map.evaluate(eps = eps, visual = vis) 
 		rew = np.append(rew, Map.reward)
