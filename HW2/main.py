@@ -17,7 +17,6 @@ def doot(Map):
 	while run < numRuns:
 		print("Run #",run)
 		Map.evaluate(eps = eps, visual = vis) 
-		Map.improve()
 		# print(Map.onStart)
 		run += 1
 
@@ -26,7 +25,7 @@ if __name__ == '__main__':
 	start = time.perf_counter()
 
 	mapFile = "track2.png"
-	mapSize = 30
+	mapSize = 15
 	Map = road(mapFile, mapSize)
 
 	with concurrent.futures.ProcessPoolExecutor() as executor:
@@ -36,7 +35,7 @@ if __name__ == '__main__':
 		f3 = executor.submit(doot,Map)
 		f4 = executor.submit(doot,Map)
 
-		# print(f1)
+		print(Map.test)
 
 	finish = time.perf_counter()
 	print("finished in %f seconds" %(finish - start))

@@ -3,16 +3,6 @@ import cv2
 from matplotlib import pyplot as plt
 import matplotlib.patches as mpatches
 
-#TODO:
-
-# Importance Sampling
-# Change time steps to be continuous
-
-# draw car sprite
-# add noise
-
- #DEBUG:
-
 
 class road:
 
@@ -73,7 +63,7 @@ class road:
 
 		#TODO fix this
 		#init expected return - give everything really bad values to start?
-		self.q_pi = -500000 * np.ones([mapSize,mapSize,5,5,3,3,2]) #(posx,posy,vx,vy,accelerationX, accelerationY, average reward & number of times at state so far)
+		self.q_pi = -50000 * np.ones([mapSize,mapSize,9,9,3,3,2]) #(posx,posy,vx,vy,accelerationX, accelerationY, average reward & number of times at state so far)
 		self.q_pi[:,:,:,:,:,:,1] = 1 #set initial counts to 1
 
 		#init starting policy
@@ -90,7 +80,7 @@ class road:
 		self.test = 0
 		# self.history = np.zeros([1,6])
 		self.history = np.zeros([1,7])
-		self.discountFactor = 0.5
+		self.discountFactor = 0.8
 
 	def draw_map(self):
 
@@ -134,38 +124,38 @@ class road:
 
 			# print(self.pos)
 
-			axApparent = 0
-			ayApparent = 0
-			randy = np.random.rand()
-			#greedy
-			if randy > eps:
-				axApparent = self.pi[self.pos[1], self.pos[0], self.vx, self.vy, 0]
-				ayApparent = self.pi[self.pos[1], self.pos[0], self.vx, self.vy, 1]
-			#exploratory
-			if randy < eps:
-				axApparent = int(np.random.randint(3) - 1) #need to be careful with how I index these the (-1) could get a lil sus
-				ayApparent = int(np.random.randint(3) - 1)
-				
 			windy = np.random.rand()
-			if windy > 0.9999:
+			if windy < 0.9999:
+				randy = np.random.rand()
+				#greedy
+				if randy > eps:
+					ax = self.pi[self.pos[1], self.pos[0], self.vx, self.vy, 0]
+					ay = self.pi[self.pos[1], self.pos[0], self.vx, self.vy, 1]
+					self.vx = int(self.vx + ax)
+					self.vy = int(self.vy + ay)
+				#exploratory
+				if randy < eps:
+					ax = int(np.random.randint(3) - 1) #need to be careful with how I index these the (-1) could get a lil sus
+					ay = int(np.random.randint(3) - 1)
+					self.vx = self.vx + ax
+					self.vy = self.vy + ay
+					#still need to record in history what action was taken
+			else:
 				ax = 0
 				ay = 0
-			else:
-				ax = axApparent
-				ay = ayApparent
-
-			self.vx = int(self.vx + ax)
-			self.vy = int(self.vy + ay)
 
 			#saturate velocity
 			if self.vx >= 5:
 				self.vx = 4
-			if self.vx < 0:
-				self.vx = 0
-			if self.vy > 0:
-				self.vy = 0
+			if self.vx <= -5:
+				self.vx = -4
+			if self.vy >= 5:
+				self.vy = 4
 			if self.vy <= -5:
 				self.vy = -4
+
+			self.pos[1] = self.pos[1] + self.vx
+			self.pos[0] = self.pos[0] + self.vy 
 
 			#check if car has left boundary of track
 			for i in self.offRoad:
@@ -185,11 +175,8 @@ class road:
 				self.restart()
 				# fin = True
 
-			self.pos[1] = self.pos[1] + self.vx
-			self.pos[0] = self.pos[0] + self.vy 
-
-			#don't take ax ay - use from policy so that wind messes stuff up
-			self.history = np.append(np.array([[self.pos[1],self.pos[0],self.vx,self.vy,axApparent,ayApparent,0]]),self.history, axis = 0)
+			self.history = np.append(np.array([[self.pos[1],self.pos[0],self.vx,self.vy,ax,ay,0]]),self.history, axis = 0)
+			# self.history = np.append(self.history,np.array([[self.pos[1],self.pos[0],self.vx,self.vy,ax,ay,0]]), axis = 0)
 
 			#check if car is stuck
 			if (step > 3):
@@ -224,15 +211,6 @@ class road:
 				self.update()
 				car.remove()
 			step += 1
-
-
-		#TODO replace this with importance sampling
-		#estimate q_pi(s,a) -> expected return from policy pi of action a at state s
-		# for h in self.history:
-		# 	#update average value of state-action pair
-		# 	self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),0] = (self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),0] + self.reward) / self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),1]
-		# 	#increment count for number of times state has been reached
-		# 	self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),1] += 1 
 
 
 		#Attempt #2 from RL book page 110
@@ -352,51 +330,31 @@ class road:
 
 	def restart(self):
 		"""go back to start"""
-		# print("Restarting")
 		self.vx = 0
 		self.vy = 0
-		# print(np.shape(self.onStart))
-
-		#issue with sharing memory
-		# self.pos = self.onStart[np.random.randint(0,len(self.onStart))]
-
-		#Actual
 		self.pos[:] = self.onStart[np.random.randint(0,len(self.onStart))]
-		#simplified
-		# self.pos[:] = self.onStart[1]
 		self.pos = self.pos.astype(int)
 
 	def update(self):
 		self.draw_map()
-		# self.draw_car()	
 		plt.pause(0.01)
 		plt.draw()
 
 if __name__ == "__main__":
 
-	mapFile = "track1.png"
+	mapFile = "track5.png"
 	mapSize = 30
 	Map = road(mapFile, mapSize)
-	numRuns = 5000
+	numRuns = 20000
 	run = 0
 	vis = False
-	eps = 0.01
+	eps = 0.005
 
 	while run < numRuns:
 		print("Run #",run)
-		# print(np.may_share_memory(Map.onStart,Map.pos))
-		# print(Map.q_pi[15,15,0,0,:,:,0])
-
-		#dynamic epsilon param
-		# eps = 1 / ((run + 1)**0.5)
 		Map.evaluate(eps = eps, visual = vis) 
-		# Map.improve()
-		# if run % 10 == 0:
-		# 	Map.improve()
-
 		run += 1
-
-		if run % 1000  == 0:
+		if run % 100  == 0:
 			Map.evaluate(eps = eps, visual = True)
 
-	np.save('pi1_v2_wind',Map.pi)
+	np.save('pi5',Map.pi)
