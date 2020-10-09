@@ -4,20 +4,15 @@ from matplotlib import pyplot as plt
 import matplotlib.patches as mpatches
 
 #TODO:
-# make arrows to display policy
-# implement initial random policy
-# backup w/ discount factor
+
+# Importance Sampling
+# Change time steps to be continuous
+
 # draw car sprite
-# sense if car has left track
-# save good policy to external file
 # add noise
-# add seed for random initial policy
- #TODO- randomize pi via epsilon-greedy
 
  #DEBUG:
- #fix .onStart[] -
- #    point is being added to onStart wherever the car leaves the track
-# 		- gw not changing
+
 
 class road:
 
@@ -93,6 +88,9 @@ class road:
 		self.restart()
 
 		self.test = 0
+		# self.history = np.zeros([1,6])
+		self.history = np.zeros([1,7])
+		self.discountFactor = 0.8
 
 	def draw_map(self):
 
@@ -125,10 +123,10 @@ class road:
 		'''evaluation step of policy improvement'''
 
 		self.test += 1
-		print("test var = ", self.test)
+		# print("test var = ", self.test)
 
 		self.reward = 0
-		self.history = np.zeros([1,6]) #(posx, posy, vx, vy, ax, ay)
+		self.history = np.zeros([1,7]) #(posx, posy, vx, vy, ax, ay, isEnd)
 		runLen = 500
 		step = 0
 		fin = False
@@ -164,17 +162,17 @@ class road:
 			#check if car has left boundary of track
 			for i in self.offRoad:
 				if np.all(self.pos == i):
-					self.reward -= 50
+					# self.reward -= 50
 					# self.reward = -1000
 					self.restart()
 					# fin = True
 			if (self.pos[0] >= self.mapSize) or (self.pos[0] < 0): #beyond boundaries of map
-				self.reward -= 50
+				# self.reward -= 50
 				# self.reward = -1000
 				self.restart()
 				# fin = True
 			if (self.pos[1] >= self.mapSize) or (self.pos[1] < 0): #beyond boundaries of map
-				self.reward -= 50
+				# self.reward -= 50
 				# self.reward = -1000
 				self.restart()
 				# fin = True
@@ -182,12 +180,13 @@ class road:
 			self.pos[1] = self.pos[1] + self.vx
 			self.pos[0] = self.pos[0] + self.vy 
 
-			self.history = np.append(np.array([[self.pos[1],self.pos[0],self.vx,self.vy,ax,ay]]),self.history, axis = 0)
-			
+			self.history = np.append(np.array([[self.pos[1],self.pos[0],self.vx,self.vy,ax,ay,0]]),self.history, axis = 0)
+			# self.history = np.append(self.history,np.array([[self.pos[1],self.pos[0],self.vx,self.vy,ax,ay,0]]), axis = 0)
+
 			#check if car is stuck
 			if (step > 3):
 				if np.array_equal(self.history[1],self.history[4]):
-					self.reward -= 10
+					# self.reward -= 10
 					# self.reward -1000
 					self.restart()
 					# fin = True
@@ -204,7 +203,10 @@ class road:
 			#stop if car reaches finish line - move to end of loop
 			for i in self.onFinish:
 				if np.all(self.pos == i):
+					# self.reward += 500
 					print("Reached Finish! Value = ", self.reward)
+					#flag step as finishing
+					self.history[0,6] = 1
 					self.restart()
 					fin = True
 
@@ -216,32 +218,83 @@ class road:
 			step += 1
 
 
+		#TODO replace this with importance sampling
 		#estimate q_pi(s,a) -> expected return from policy pi of action a at state s
+		# for h in self.history:
+		# 	#update average value of state-action pair
+		# 	self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),0] = (self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),0] + self.reward) / self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),1]
+		# 	#increment count for number of times state has been reached
+		# 	self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),1] += 1 
+
+
+		#Attempt #2 from RL book page 110
+		#sum of discounted rewards
+		G = 0.0
+		#importance sampling ratio
+		W = 1.0
+		t = 0
 		for h in self.history:
-			#TODO- make this less absurd looking
-			# #update average value of state-action pair
-			# self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,0] = (self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,0] + self.reward) / self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,1]
-			# #increment count for number of times state has been reached
-			# self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,int(self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]) + 1,1] += 1 
+			# update reward since step t
+			G = self.discountFactor * G + self.reward
+			# 	#increment count for number of times state has been reached
+			self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),1] += W 
+			# self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),0] = (W / self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),1]) * (G - self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),0])
 
-			#revised
-			#update average value of state-action pair
-			self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),0] = (self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),0] + self.reward) / self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),1]
-			#increment count for number of times state has been reached
-			self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),1] += 1 
+			# print("t = ", t, " ", self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),0])
+			self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),0] = self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),0] + (W / self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),1]) * (G - self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),0])
 
+			#moved from improve()
+			top = np.argwhere(self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),:,:,0] == np.amax(self.q_pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),:,:,0])) #get list of all args equal to arg of highest value
+			best = top[np.random.randint(len(top))]
+			self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0] = best[1] - 1
+			self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),1] = best[0] - 1
+
+			W = W * (1-eps) ** t
+			t+=1
+
+			#A != pi(St)
+			if (self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0] != h[4]) and (self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),1] != h[5]):
+				break 
+
+
+			# #check if behavior followed target policy action
+			# if h[4] != self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),0]:
+			# 	if h[5] != self.pi[int(h[0]),int(h[1]),int(h[2]),int(h[3]),1]:
+			# 		# print("not following target policy")
+			# 		break
+			#Update W
+
+
+		#Try #3
+		#importance sampling
+		#find at what points in history the agent reached the finish
+		# ends = np.argwhere(Map.history[:,6] == 1)
+		# G = 0.0 #sum of discount rewards of BEHAVIOR policy
+		# t = 0 #number of timesteps between h and finish
+		
+		# for h in self.history:
+
+		# 	G = self.discountFactor * G + self.reward
+		# 	rho = (1 - eps) ** t
+		# 	Tau = [] #set of all time steps in which state s is visited 
+			
+		# 	for i in range(np.shape(self.history[0])):
+		# 		if (Map.history[i][:6] == h[:6]):
+		# 			np.append(Tau,h)
+
+		# 	#First time of termination after current step (don't forget we are counting back here)
+		# 	for i in ends:
+		# 		if (i < t) and (i > t+1):
+		# 			T = i 
+
+
+		# 	t += 1
+
+
+			
 
 	def improve(self):
 		'''improvement step of policy improvement'''
-
-		#average returns observed after state is visited- should converge to expected value
-		#use first-visit MC
-
-		#pi -> greedy(Q)
-		#pi = argmax(q_pi(s,a))
-		
-
-		# print(self.q_pi[15,15,0,0,:,:,0])
 
 		#indexes not values
 		xpos = 0
@@ -256,7 +309,11 @@ class road:
 							# print(self.q_pi[xpos,ypos,vx,vy,:,:,0])
 							# returns 3x3 array for all combos of x and y
 
-						#TODO - pick one at random if more than one max
+						#Importance Sampling
+						# tau = np.argwhere(self.history == self.history[xpos,ypos,vx,vy,:,:,:])		
+
+
+						# pick one at random if more than one max
 						top = np.argwhere(self.q_pi[xpos,ypos,vx,vy,:,:,0] == np.amax(self.q_pi[xpos,ypos,vx,vy,:,:,0])) #get list of all args equal to arg of highest value
 
 						best = top[np.random.randint(len(top))]
@@ -309,13 +366,13 @@ class road:
 
 if __name__ == "__main__":
 
-	mapFile = "track2.png"
-	mapSize = 30
+	mapFile = "track1.png"
+	mapSize = 15
 	Map = road(mapFile, mapSize)
-	numRuns = 5000
+	numRuns = 500
 	run = 0
 	vis = False
-	eps = 0.05
+	eps = 0.01
 
 	while run < numRuns:
 		print("Run #",run)
@@ -325,11 +382,13 @@ if __name__ == "__main__":
 		#dynamic epsilon param
 		# eps = 1 / ((run + 1)**0.5)
 		Map.evaluate(eps = eps, visual = vis) 
-		Map.improve()
-		# print(Map.onStart)
+		# Map.improve()
+		# if run % 10 == 0:
+		# 	Map.improve()
+
 		run += 1
 
-		if run % 25  == 0:
-			Map.evaluate(eps = 0, visual = True)
+		if run % 100  == 0:
+			Map.evaluate(eps = eps, visual = True)
 
-	np.save('pi2.txt',Map.pi)
+	# np.save('pi3.txt',Map.pi)
