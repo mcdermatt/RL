@@ -19,10 +19,10 @@ Map = road(mapFile, mapSize = mapSize, wind = 0)
 # pi = np.load('pi1_v2_no_wind.npy')
 # Map.pi = pi
 
-numRuns = 5000
+numRuns = 1024
 run = 0
 vis = False
-eps = 0.1
+eps = 0.2
 
 pic = cv2.imread(mapFile)
 scale_percent = 100 # percent of original size
@@ -41,6 +41,14 @@ for i in range(np.shape(Map.onStart)[0]):
 vals = -5000*np.ones(len(best))
 
 while run < numRuns:
+
+		if run == numRuns / 2:
+			eps = eps / 2
+		if run == numRuns / 4:
+			eps = eps / 2
+		if  run == numRuns / 8:
+			eps = eps / 2
+
 		print("Run #",run)
 		Map.evaluate(eps = eps, visual = vis) 
 		val = Map.reward
@@ -94,4 +102,4 @@ for i in best:
 
 plt.pause(10)
 plt.draw()
-plt.savefig("Track_5_SolnV9.png")
+plt.savefig("Track_5_SolnV10.png")
