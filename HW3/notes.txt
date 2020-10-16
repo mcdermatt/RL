@@ -1,0 +1,12 @@
+pymunk - 2d physics simulation (might not work)
+
+PyDy - will definately work, may be overkill
+
+
+Workflow:
+1- Decide on scope of problem
+2- Make model of runner in PyDy
+3- Solve for equations of motion and save to external function file with CloudPickle
+4- Make PyGame Visualizer
+5- Add joint limits (no backward bending knees)
+6- GROUND PLANE
