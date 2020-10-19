@@ -7,11 +7,21 @@ from pygame.locals import *
 import pickle
 import pygame
 
-pymunk.pygame_util.positive_y_is_up = False
+
+wX = 1600
+wY = 800
+dampingCoeff = 5000
+
+foreground = (178,102,255,255)
+midground = (153,51,255,255)
+background = (76,0,151,255)
+
+Arms = False
 
 #init pygame
+pymunk.pygame_util.positive_y_is_up = False
 pygame.init()
-screen = pygame.display.set_mode((2050, 800))
+screen = pygame.display.set_mode((wX,wY))
 clock = pygame.time.Clock()
 font = pygame.font.Font(None, 24)
 box_size = 200
@@ -27,8 +37,9 @@ space = pymunk.Space()
 space.gravity = (0.0, 900.0)
 draw_options = pymunk.pygame_util.DrawOptions(screen)
 
+
 class Box:
-    def __init__(self, p0=(10, 10), p1=(2000, 700), d=2):
+    def __init__(self, p0=(10, 10), p1=(wX-10,wY-50), d=2):
         x0, y0 = p0
         x1, y1 = p1
         pts = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
@@ -37,53 +48,110 @@ class Box:
             segment.elasticity = 1
             segment.friction = 1
             space.add(segment)
+Box()
 
-def add_limb(space,pos,length = 30, mass = 2, thiccness = 10, color = (100,100,100,255), filter = 0b100):
+def add_limb(space,pos,length = 30, mass = 2, thiccness = 10, color = (100,100,100,255), COLLTYPE = 1):#filter = 0b100):
 	body = pymunk.Body()
 	body.position = Vec2d(pos)
 	shape = pymunk.Segment(body, (0,length), (0,-length), thiccness)
 	shape.mass = mass
 	shape.friction = 0.7
 	shape.color = color
-	COLLTYPE_BACK = 3
-	shape.collision_type = COLLTYPE_BACK
+	# COLLTYPE_BACK = 3
+	if COLLTYPE == 1:
+		shape.collision_type = 1
+		filter = 0b100
+	else:
+		shape.collision_type = 3
+		filter = 0b01 # this filter value will cause stuff to collide
+		# filter = 0b100
 	space.add(body, shape)
 	#shapes of same filter will not collide with one another
 	shape.filter = pymunk.ShapeFilter(categories=filter, mask=pymunk.ShapeFilter.ALL_MASKS ^ filter)
 	return body
 
-Box()
-
 #add right leg
-rightShin = add_limb(space, (100,500), color = (76,0,151,255))
-rightThigh = add_limb(space, (100,400), thiccness = 15, color = (76,0,151,255))
+rightShin = add_limb(space, (100,500), color = background)
+rightThigh = add_limb(space, (100,400), thiccness = 15, color = background)
 rightKnee = pymunk.PivotJoint(rightShin,rightThigh,(100,450))
 rightKneeLimits = pymunk.RotaryLimitJoint(rightShin,rightThigh,-2.5,0)
+rightKneeDamp = pymunk.DampedRotarySpring(rightShin,rightThigh,0,0,dampingCoeff)
 space.add(rightKnee)
 space.add(rightKneeLimits)
+space.add(rightKneeDamp)
+
 #add left leg
-leftShin = add_limb(space, (100,500), color = (178,102,255,255))
-leftThigh = add_limb(space, (100,400), thiccness = 15, color = (178,102,255,255))
+leftShin = add_limb(space, (100,500), color = foreground)
+leftThigh = add_limb(space, (100,400), thiccness = 15, color = foreground)
 leftKnee = pymunk.PivotJoint(leftShin,leftThigh,(100,450))
 leftKneeLimits = pymunk.RotaryLimitJoint(leftShin,leftThigh,-2.5,0)
+leftKneeDamp = pymunk.DampedRotarySpring(leftShin,leftThigh,0,0,dampingCoeff)
+space.add(leftKneeDamp)
 space.add(leftKnee)
 space.add(leftKneeLimits)
 
-butt = add_limb(space,(90,320), length = 10, thiccness = 17,color = (153,51,255,255),filter = 0b01)
+butt = add_limb(space,(90,320), length = 10, thiccness = 17,color = midground, COLLTYPE = 3)
+
 rightHip = pymunk.PivotJoint(rightThigh,butt,(100,350))
 rightHipLimits = pymunk.RotaryLimitJoint(rightThigh,butt,-1,3)
+rightHipDamp = pymunk.DampedRotarySpring(rightThigh,butt,0,0,dampingCoeff)
+space.add(rightHipDamp)
 space.add(rightHip)
 space.add(rightHipLimits)
+
 leftHip = pymunk.PivotJoint(leftThigh,butt,(100,350))
 leftHipLimits = pymunk.RotaryLimitJoint(leftThigh,butt,-1,3)
+leftHipDamp = pymunk.DampedRotarySpring(leftThigh,butt,0,0,dampingCoeff)
+space.add(leftHipDamp)
 space.add(leftHip)
 space.add(leftHipLimits)
 
-back = add_limb(space,(100,245), mass = 2, length = 30, thiccness = 15, color = (153,51,255,255), filter = 0b01)
+back = add_limb(space,(100,245), mass = 2, length = 30, thiccness = 15, color = midground, COLLTYPE = 3)# filter = 0b01)
 spine = pymunk.PivotJoint(butt,back,(100,300))
 spineLimits = pymunk.RotaryLimitJoint(butt,back,-0.25,1)
+spineDamp = pymunk.DampedRotarySpring(butt,back,0,0,dampingCoeff)
+space.add(spineDamp)
 space.add(spine)
 space.add(spineLimits)
+
+if Arms:
+	#add right arm
+	shoulderHeight = 240
+	rightLowerArm = add_limb(space, (100,shoulderHeight+80), color = foreground, COLLTYPE = 3)
+	rightUpperArm = add_limb(space, (100,shoulderHeight), thiccness = 12, color = foreground, COLLTYPE = 3)
+	rightElbow = pymunk.PivotJoint(rightLowerArm,rightUpperArm,(100,shoulderHeight+50))
+	rightElbowLimits = pymunk.RotaryLimitJoint(rightLowerArm,rightUpperArm,0,2.2)
+	rightElbowDamp = pymunk.DampedRotarySpring(rightLowerArm,rightUpperArm,0,0,dampingCoeff)
+	space.add(rightElbow)
+	space.add(rightElbowLimits)
+	space.add(rightElbowDamp)
+
+	#add left arm
+	shoulderHeight = 240
+	leftLowerArm = add_limb(space, (100,shoulderHeight+80), color = background, COLLTYPE = 3) #appearing in wierd order
+				# if i comment out the lower arm the upper arm starts acting weird
+	leftUpperArm = add_limb(space, (100,shoulderHeight), thiccness = 12, color = background, COLLTYPE = 3)
+	leftElbow = pymunk.PivotJoint(leftLowerArm,leftUpperArm,(100,shoulderHeight+50))
+	leftElbowLimits = pymunk.RotaryLimitJoint(leftLowerArm,leftUpperArm,0,2.2)
+	leftElbowDamp = pymunk.DampedRotarySpring(leftLowerArm,leftUpperArm,0,0,dampingCoeff)
+	space.add(leftElbow)
+	space.add(leftElbowLimits)
+	space.add(leftElbowDamp)
+
+	rightShoulder = pymunk.PivotJoint(rightUpperArm,back,(100,shoulderHeight-20))
+	# rightShoulderLimits = pymunk.RotaryLimitJoint(rightUpperArm,back,-2.5,3.5)
+	rightShoulderDamp = pymunk.DampedRotarySpring(rightUpperArm,back,0,0,dampingCoeff)
+	space.add(rightShoulder)
+	# space.add(rightShoulderLimits)
+	space.add(rightShoulderDamp)
+
+	leftShoulder = pymunk.PivotJoint(leftUpperArm,back,(100,shoulderHeight-20))
+	# leftShoulderLimits = pymunk.RotaryLimitJoint(leftUpperArm,back,-2.5,3.5)
+	leftShoulderDamp = pymunk.DampedRotarySpring(leftUpperArm,back,0,0,dampingCoeff)
+	space.add(leftShoulder)
+	# space.add(leftShoulderLimits)
+	space.add(leftShoulderDamp)
+
 
 #init collision callback function
 def fell_over(space, arbiter, x):
@@ -93,8 +161,7 @@ def fell_over(space, arbiter, x):
 # Create and add the "goal" 
 COLLTYPE_GOAL = 2
 goal_body = pymunk.Body()
-goal_body.position = 100,100
-goal = pymunk.Circle(goal_body, 50)
+goal = pymunk.Poly(goal_body, [(10,wY-50),(10,wY),(wX-10,wY),(wX-10,wY-50)])
 goal.collision_type = COLLTYPE_GOAL
 space.add(goal)
 
