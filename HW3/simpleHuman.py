@@ -10,13 +10,15 @@ import pygame
 
 wX = 1600
 wY = 800
-dampingCoeff = 5000
+dampingCoeff = 10000
 
 foreground = (178,102,255,255)
 midground = (153,51,255,255)
-background = (76,0,151,255)
+background = (127,0,255,255)
+sky = (153,204,255,255)
+floor = (0,51,102,255)
 
-Arms = False
+Arms = True
 
 #init pygame
 pymunk.pygame_util.positive_y_is_up = False
@@ -47,6 +49,7 @@ class Box:
             segment = pymunk.Segment(space.static_body, pts[i], pts[(i+1)%4], d)
             segment.elasticity = 1
             segment.friction = 1
+            segment.color = sky
             space.add(segment)
 Box()
 
@@ -61,9 +64,12 @@ def add_limb(space,pos,length = 30, mass = 2, thiccness = 10, color = (100,100,1
 	if COLLTYPE == 1:
 		shape.collision_type = 1
 		filter = 0b100
-	else:
+	if COLLTYPE == 2:
+		shape.collision_type = 2
+		filter = 0b110
+	if COLLTYPE == 3:
 		shape.collision_type = 3
-		filter = 0b01 # this filter value will cause stuff to collide
+		filter = 0b010 
 		# filter = 0b100
 	space.add(body, shape)
 	#shapes of same filter will not collide with one another
@@ -81,8 +87,8 @@ space.add(rightKneeLimits)
 space.add(rightKneeDamp)
 
 #add left leg
-leftShin = add_limb(space, (100,500), color = foreground)
-leftThigh = add_limb(space, (100,400), thiccness = 15, color = foreground)
+leftShin = add_limb(space, (100,500), color = midground)
+leftThigh = add_limb(space, (100,400), thiccness = 15, color = midground)
 leftKnee = pymunk.PivotJoint(leftShin,leftThigh,(100,450))
 leftKneeLimits = pymunk.RotaryLimitJoint(leftShin,leftThigh,-2.5,0)
 leftKneeDamp = pymunk.DampedRotarySpring(leftShin,leftThigh,0,0,dampingCoeff)
@@ -90,7 +96,8 @@ space.add(leftKneeDamp)
 space.add(leftKnee)
 space.add(leftKneeLimits)
 
-butt = add_limb(space,(90,320), length = 10, thiccness = 17,color = midground, COLLTYPE = 3)
+buttOffset = 10 
+butt = add_limb(space,(100-buttOffset,320), length = 10, thiccness = 18,color = midground, COLLTYPE = 3)
 
 rightHip = pymunk.PivotJoint(rightThigh,butt,(100,350))
 rightHipLimits = pymunk.RotaryLimitJoint(rightThigh,butt,-1,3)
@@ -115,10 +122,18 @@ space.add(spine)
 space.add(spineLimits)
 
 if Arms:
-	#add right arm
+	
 	shoulderHeight = 240
-	rightLowerArm = add_limb(space, (100,shoulderHeight+80), color = foreground, COLLTYPE = 3)
-	rightUpperArm = add_limb(space, (100,shoulderHeight), thiccness = 12, color = foreground, COLLTYPE = 3)
+
+	head = add_limb(space,(100,shoulderHeight - 50), length = 10, thiccness = 22,color = midground, COLLTYPE = 3)
+	neck = pymunk.PivotJoint(back,head,(100, shoulderHeight - 40))
+	neckLimits = pymunk.RotaryLimitJoint(back,head,-0.2,0.8)
+	space.add(neck)
+	space.add(neckLimits)
+
+	#add right arm
+	rightLowerArm = add_limb(space, (100,shoulderHeight+80), color = foreground, COLLTYPE = 2)
+	rightUpperArm = add_limb(space, (100,shoulderHeight), thiccness = 12, color = foreground, COLLTYPE = 2)
 	rightElbow = pymunk.PivotJoint(rightLowerArm,rightUpperArm,(100,shoulderHeight+50))
 	rightElbowLimits = pymunk.RotaryLimitJoint(rightLowerArm,rightUpperArm,0,2.2)
 	rightElbowDamp = pymunk.DampedRotarySpring(rightLowerArm,rightUpperArm,0,0,dampingCoeff)
@@ -128,9 +143,10 @@ if Arms:
 
 	#add left arm
 	shoulderHeight = 240
-	leftLowerArm = add_limb(space, (100,shoulderHeight+80), color = background, COLLTYPE = 3) #appearing in wierd order
+	leftUpperArm = add_limb(space, (100,shoulderHeight), thiccness = 12, color = background, COLLTYPE = 2)
+	leftLowerArm = add_limb(space, (100,shoulderHeight+80), color = background, COLLTYPE = 2) #appearing in wierd order
 				# if i comment out the lower arm the upper arm starts acting weird
-	leftUpperArm = add_limb(space, (100,shoulderHeight), thiccness = 12, color = background, COLLTYPE = 3)
+
 	leftElbow = pymunk.PivotJoint(leftLowerArm,leftUpperArm,(100,shoulderHeight+50))
 	leftElbowLimits = pymunk.RotaryLimitJoint(leftLowerArm,leftUpperArm,0,2.2)
 	leftElbowDamp = pymunk.DampedRotarySpring(leftLowerArm,leftUpperArm,0,0,dampingCoeff)
@@ -152,106 +168,113 @@ if Arms:
 	# space.add(leftShoulderLimits)
 	space.add(leftShoulderDamp)
 
+	
+
 
 #init collision callback function
 def fell_over(space, arbiter, x):
-    print("player fell over")
+    print("player fell over at x =", back.position[0])
+    # pygame.quit()
     return True
 
 # Create and add the "goal" 
 COLLTYPE_GOAL = 2
 goal_body = pymunk.Body()
 goal = pymunk.Poly(goal_body, [(10,wY-50),(10,wY),(wX-10,wY),(wX-10,wY-50)])
+goal.color = floor
 goal.collision_type = COLLTYPE_GOAL
 space.add(goal)
 
 COLLTYPE_BACK = 3
-back.collision_type = COLLTYPE_BACK
-# rightThigh.collision_type = COLLTYPE_GROUND
 h = space.add_collision_handler(COLLTYPE_BACK, COLLTYPE_GOAL)
 
 while True:
-    h.begin = fell_over
 
-    for event in pygame.event.get():
-        if event.type == QUIT:
-            exit()
-        elif event.type == KEYDOWN and event.key == K_ESCAPE:
-            exit()
-
-        #QWOP
-        elif event.type == KEYDOWN and event.key == K_q:
-            # print("Q")
-            rightThigh.apply_force_at_local_point((100000,0),(0,0))
-            rightThigh.apply_force_at_local_point((-100000,0),(0,-30))
-        elif event.type == KEYDOWN and event.key == K_w:
-            # print("W")
-            leftThigh.apply_force_at_local_point((100000,0),(0,0))
-            leftThigh.apply_force_at_local_point((-100000,0),(0,-30))
-        elif event.type == KEYDOWN and event.key == K_o:
-            # print("O")
-            rightShin.apply_force_at_local_point((-100000,0),(0,0))
-            rightShin.apply_force_at_local_point((100000,0),(0,-30))
-        elif event.type == KEYDOWN and event.key == K_p:
-            # print("P")
-            leftShin.apply_force_at_local_point((-100000,0),(0,0))
-            leftShin.apply_force_at_local_point((100000,0),(0,-30))
-        # elif event.type == KEYDOWN and event.key == K_e:
-        #     print("E")
-        #     back.apply_impulse_at_local_point((1000,0),(0,0))
-
-        elif event.type == MOUSEBUTTONDOWN:
-            if mouse_joint != None:
-                space.remove(mouse_joint)
-                mouse_joint = None
-
-            p = Vec2d(event.pos)
-            hit = space.point_query_nearest(p, 5, pymunk.ShapeFilter())
-            if hit != None and hit.shape.body.body_type == pymunk.Body.DYNAMIC:
-                shape = hit.shape
-                # Use the closest point on the surface if the click is outside 
-                # of the shape.
-                if hit.distance > 0:
-                    nearest = hit.point 
-                else:
-                    nearest = p
-                mouse_joint = pymunk.PivotJoint(mouse_body, shape.body, 
-                    (0,0), shape.body.world_to_local(nearest))
-                mouse_joint.max_force = 50000
-                mouse_joint.error_bias = (1-0.15) ** 60
-                space.add(mouse_joint)
-                
-        elif event.type == MOUSEBUTTONUP:
-            if mouse_joint != None:
-                space.remove(mouse_joint)
-                mouse_joint = None
-
-    #check to see if body of player has collided with box
-
-
-    screen.fill(pygame.color.THECOLORS["white"])
-
-    screen.blit(help_txt, (5, screen.get_height() - 20))
+	leftKneeAng = leftShin.angle - leftThigh.angle
+	rightKneeAng = rightShin.angle - rightThigh.angle
+	print(leftKneeAng,rightKneeAng)
+	h.begin = fell_over
     
-    mouse_pos = pygame.mouse.get_pos()
+	for event in pygame.event.get():
+	    if event.type == QUIT:
+	        exit()
+	    elif event.type == KEYDOWN and event.key == K_ESCAPE:
+	        exit()
 
-    # Display help message
-    x = mouse_pos[0] / box_size * box_size
-    y = mouse_pos[1] / box_size * box_size
-    if (x,y) in box_texts:    
-        txts = box_texts[(x,y)]
-        i = 0
-        for txt in txts:
-            pos = (5,box_size * 2 + 10 + i*20)
-            screen.blit(txt, pos)        
-            i += 1
+	    #QWOP
+	    elif event.type == KEYDOWN and event.key == K_q:
+	        # print("Q")
+	        rightThigh.apply_force_at_local_point((100000,0),(0,0))
+	        rightThigh.apply_force_at_local_point((-100000,0),(0,-30))
+	    elif event.type == KEYDOWN and event.key == K_w:
+	        # print("W")
+	        leftThigh.apply_force_at_local_point((100000,0),(0,0))
+	        leftThigh.apply_force_at_local_point((-100000,0),(0,-30))
+	    elif event.type == KEYDOWN and event.key == K_o:
+	        # print("O")
+	        rightShin.apply_force_at_local_point((-100000,0),(0,0))
+	        rightShin.apply_force_at_local_point((100000,0),(0,-30))
+	    elif event.type == KEYDOWN and event.key == K_p:
+	        # print("P")
+	        leftShin.apply_force_at_local_point((-100000,0),(0,0))
+	        leftShin.apply_force_at_local_point((100000,0),(0,-30))
+	    # elif event.type == KEYDOWN and event.key == K_e:
+	    #     print("E")
+	    #     back.apply_impulse_at_local_point((1000,0),(0,0))
 
-    mouse_body.position = mouse_pos
+	    elif event.type == MOUSEBUTTONDOWN:
+	        if mouse_joint != None:
+	            space.remove(mouse_joint)
+	            mouse_joint = None
 
-    space.step(1./60)
-    
-    space.debug_draw(draw_options)
-    pygame.display.flip()
+	        p = Vec2d(event.pos)
+	        hit = space.point_query_nearest(p, 5, pymunk.ShapeFilter())
+	        if hit != None and hit.shape.body.body_type == pymunk.Body.DYNAMIC:
+	            shape = hit.shape
+	            # Use the closest point on the surface if the click is outside 
+	            # of the shape.
+	            if hit.distance > 0:
+	                nearest = hit.point 
+	            else:
+	                nearest = p
+	            mouse_joint = pymunk.PivotJoint(mouse_body, shape.body, 
+	                (0,0), shape.body.world_to_local(nearest))
+	            mouse_joint.max_force = 50000
+	            mouse_joint.error_bias = (1-0.15) ** 60
+	            space.add(mouse_joint)
+	            
+	    elif event.type == MOUSEBUTTONUP:
+	        if mouse_joint != None:
+	            space.remove(mouse_joint)
+	            mouse_joint = None
 
-    clock.tick(60)
-    pygame.display.set_caption("fps: " + str(clock.get_fps()))
+	#check to see if body of player has collided with box
+
+
+	# screen.fill(pygame.color.THECOLORS["yellow"])
+	screen.fill(sky)
+
+	screen.blit(help_txt, (5, screen.get_height() - 20))
+
+	mouse_pos = pygame.mouse.get_pos()
+
+	# Display help message
+	x = mouse_pos[0] / box_size * box_size
+	y = mouse_pos[1] / box_size * box_size
+	if (x,y) in box_texts:    
+	    txts = box_texts[(x,y)]
+	    i = 0
+	    for txt in txts:
+	        pos = (5,box_size * 2 + 10 + i*20)
+	        screen.blit(txt, pos)        
+	        i += 1
+
+	mouse_body.position = mouse_pos
+
+	space.step(1./60)
+
+	space.debug_draw(draw_options)
+	pygame.display.flip()
+
+	clock.tick(60)
+	pygame.display.set_caption("fps: " + str(clock.get_fps()))
