@@ -11,7 +11,7 @@ pymunk.pygame_util.positive_y_is_up = False
 
 #init pygame
 pygame.init()
-screen = pygame.display.set_mode((1200, 800))
+screen = pygame.display.set_mode((2050, 800))
 clock = pygame.time.Clock()
 font = pygame.font.Font(None, 24)
 box_size = 200
@@ -28,7 +28,7 @@ space.gravity = (0.0, 900.0)
 draw_options = pymunk.pygame_util.DrawOptions(screen)
 
 class Box:
-    def __init__(self, p0=(10, 10), p1=(1000, 700), d=2):
+    def __init__(self, p0=(10, 10), p1=(2000, 700), d=2):
         x0, y0 = p0
         x1, y1 = p1
         pts = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
@@ -38,13 +38,15 @@ class Box:
             segment.friction = 1
             space.add(segment)
 
-def add_limb(space,pos,length = 30, thiccness = 10, color = (100,100,100,255), filter = 0b100):
+def add_limb(space,pos,length = 30, mass = 2, thiccness = 10, color = (100,100,100,255), filter = 0b100):
 	body = pymunk.Body()
 	body.position = Vec2d(pos)
 	shape = pymunk.Segment(body, (0,length), (0,-length), thiccness)
-	shape.mass = 2
+	shape.mass = mass
 	shape.friction = 0.7
 	shape.color = color
+	COLLTYPE_BACK = 3
+	shape.collision_type = COLLTYPE_BACK
 	space.add(body, shape)
 	#shapes of same filter will not collide with one another
 	shape.filter = pymunk.ShapeFilter(categories=filter, mask=pymunk.ShapeFilter.ALL_MASKS ^ filter)
@@ -77,18 +79,60 @@ leftHipLimits = pymunk.RotaryLimitJoint(leftThigh,butt,-1,3)
 space.add(leftHip)
 space.add(leftHipLimits)
 
-back = add_limb(space,(100,245), length = 30, thiccness = 15, color = (153,51,255,255), filter = 0b01)
+back = add_limb(space,(100,245), mass = 2, length = 30, thiccness = 15, color = (153,51,255,255), filter = 0b01)
 spine = pymunk.PivotJoint(butt,back,(100,300))
 spineLimits = pymunk.RotaryLimitJoint(butt,back,-0.25,1)
 space.add(spine)
 space.add(spineLimits)
 
+#init collision callback function
+def fell_over(space, arbiter, x):
+    print("player fell over")
+    return True
+
+# Create and add the "goal" 
+COLLTYPE_GOAL = 2
+goal_body = pymunk.Body()
+goal_body.position = 100,100
+goal = pymunk.Circle(goal_body, 50)
+goal.collision_type = COLLTYPE_GOAL
+space.add(goal)
+
+COLLTYPE_BACK = 3
+back.collision_type = COLLTYPE_BACK
+# rightThigh.collision_type = COLLTYPE_GROUND
+h = space.add_collision_handler(COLLTYPE_BACK, COLLTYPE_GOAL)
+
 while True:
+    h.begin = fell_over
+
     for event in pygame.event.get():
         if event.type == QUIT:
             exit()
         elif event.type == KEYDOWN and event.key == K_ESCAPE:
             exit()
+
+        #QWOP
+        elif event.type == KEYDOWN and event.key == K_q:
+            # print("Q")
+            rightThigh.apply_force_at_local_point((100000,0),(0,0))
+            rightThigh.apply_force_at_local_point((-100000,0),(0,-30))
+        elif event.type == KEYDOWN and event.key == K_w:
+            # print("W")
+            leftThigh.apply_force_at_local_point((100000,0),(0,0))
+            leftThigh.apply_force_at_local_point((-100000,0),(0,-30))
+        elif event.type == KEYDOWN and event.key == K_o:
+            # print("O")
+            rightShin.apply_force_at_local_point((-100000,0),(0,0))
+            rightShin.apply_force_at_local_point((100000,0),(0,-30))
+        elif event.type == KEYDOWN and event.key == K_p:
+            # print("P")
+            leftShin.apply_force_at_local_point((-100000,0),(0,0))
+            leftShin.apply_force_at_local_point((100000,0),(0,-30))
+        # elif event.type == KEYDOWN and event.key == K_e:
+        #     print("E")
+        #     back.apply_impulse_at_local_point((1000,0),(0,0))
+
         elif event.type == MOUSEBUTTONDOWN:
             if mouse_joint != None:
                 space.remove(mouse_joint)
@@ -114,6 +158,9 @@ while True:
             if mouse_joint != None:
                 space.remove(mouse_joint)
                 mouse_joint = None
+
+    #check to see if body of player has collided with box
+
 
     screen.fill(pygame.color.THECOLORS["white"])
 

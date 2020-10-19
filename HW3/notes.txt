@@ -1,18 +1,18 @@
-pymunk - 2d physics simulation (might not work)
-
-PyDy - will definately work, may be overkill
-
-
 Workflow:
 1- Decide on scope of problem
-2- Make model of runner in PyDy
-	a- model sliding ladder problem
-	b- model simplified human
-	c- model two legged human
 
-3- Solve for equations of motion and save to external function file with CloudPickle
-4- Make PyGame Visualizer
-5- Add joint limits (no backward bending knees)
-6- GROUND PLANE??
+2- Make model of simplified human in pymunk
+	a. legs, butt and back
+	b. make legs not collide with one another
+	c. set joint limits
+	d. apply torques to each joint with QWOP
+	e. detect collisions between body and ground
+
+3- Figure out off-policy q-learning
+
+4- Define Reward Function
+
+5- 
+
 
 
