@@ -97,7 +97,7 @@ space.add(leftKnee)
 space.add(leftKneeLimits)
 
 buttOffset = 10 
-butt = add_limb(space,(100-buttOffset,320), length = 10, thiccness = 18,color = midground, COLLTYPE = 3)
+butt = add_limb(space,(100-buttOffset,320), length = 10, thiccness = 17,color = midground, COLLTYPE = 3)
 
 rightHip = pymunk.PivotJoint(rightThigh,butt,(100,350))
 rightHipLimits = pymunk.RotaryLimitJoint(rightThigh,butt,-1,3)
