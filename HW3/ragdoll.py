@@ -26,12 +26,14 @@ class ragdoll:
 		self.sky = (153,204,255,255)
 		self.floor = (0,51,102,255)
 
-		if viz:
+		self.screen = pygame.display.set_mode((self.wX,self.wY))
+		self.clock = pygame.time.Clock()
+		self.viz = viz
+
+		if self.viz:
 			#init pygame
 			pymunk.pygame_util.positive_y_is_up = False
-			pygame.init()
-			self.screen = pygame.display.set_mode((self.wX,self.wY))
-			self.clock = pygame.time.Clock()
+			pygame.init()			
 			self.font = pygame.font.Font(None, 24)
 			self.box_size = 200
 			self.box_texts = {}
@@ -193,83 +195,88 @@ class ragdoll:
 			    #QWOP
 			    elif event.type == KEYDOWN and event.key == K_q:
 			        # print("Q")
-			        rightThigh.apply_force_at_local_point((100000,0),(0,0))
-			        rightThigh.apply_force_at_local_point((-100000,0),(0,-30))
+			        self.rightThigh.apply_force_at_local_point((100000,0),(0,0))
+			        self.rightThigh.apply_force_at_local_point((-100000,0),(0,-30))
 			    elif event.type == KEYDOWN and event.key == K_w:
 			        # print("W")
-			        leftThigh.apply_force_at_local_point((100000,0),(0,0))
-			        leftThigh.apply_force_at_local_point((-100000,0),(0,-30))
+			        self.leftThigh.apply_force_at_local_point((100000,0),(0,0))
+			        self.leftThigh.apply_force_at_local_point((-100000,0),(0,-30))
 			    elif event.type == KEYDOWN and event.key == K_o:
 			        # print("O")
-			        rightShin.apply_force_at_local_point((-100000,0),(0,0))
-			        rightShin.apply_force_at_local_point((100000,0),(0,-30))
+			        self.rightShin.apply_force_at_local_point((-100000,0),(0,0))
+			        self.rightShin.apply_force_at_local_point((100000,0),(0,-30))
 			    elif event.type == KEYDOWN and event.key == K_p:
 			        # print("P")
-			        leftShin.apply_force_at_local_point((-100000,0),(0,0))
-			        leftShin.apply_force_at_local_point((100000,0),(0,-30))
+			        self.leftShin.apply_force_at_local_point((-100000,0),(0,0))
+			        self.leftShin.apply_force_at_local_point((100000,0),(0,-30))
 			    # elif event.type == KEYDOWN and event.key == K_e:
 			    #     print("E")
 			    #     back.apply_impulse_at_local_point((1000,0),(0,0))
 
-			    elif event.type == MOUSEBUTTONDOWN:
-			        if self.mouse_joint != None:
-			            space.remove(mouse_joint)
-			            self.mouse_joint = None
+			    #FOR DEBUG: Drag around ragdoll with mouse pointer
 
-			        p = Vec2d(event.pos)
-			        hit = self.space.point_query_nearest(p, 5, pymunk.ShapeFilter())
-			        if hit != None and hit.shape.body.body_type == pymunk.Body.DYNAMIC:
-			            shape = hit.shape
-			            # Use the closest point on the surface if the click is outside 
-			            # of the shape.
-			            if hit.distance > 0:
-			                nearest = hit.point 
-			            else:
-			                nearest = p
-			            self.mouse_joint = pymunk.PivotJoint(self.mouse_body, shape.body, 
-			                (0,0), shape.body.world_to_local(nearest))
-			            self.mouse_joint.max_force = 50000
-			            self.mouse_joint.error_bias = (1-0.15) ** 60
-			            self.space.add(self.mouse_joint)
+			    # elif event.type == MOUSEBUTTONDOWN:
+			    #     if self.mouse_joint != None:
+			    #         space.remove(mouse_joint)
+			    #         self.mouse_joint = None
+
+			    #     p = Vec2d(event.pos)
+			    #     hit = self.space.point_query_nearest(p, 5, pymunk.ShapeFilter())
+			    #     if hit != None and hit.shape.body.body_type == pymunk.Body.DYNAMIC:
+			    #         shape = hit.shape
+			    #         # Use the closest point on the surface if the click is outside 
+			    #         # of the shape.
+			    #         if hit.distance > 0:
+			    #             nearest = hit.point 
+			    #         else:
+			    #             nearest = p
+			    #         self.mouse_joint = pymunk.PivotJoint(self.mouse_body, shape.body, 
+			    #             (0,0), shape.body.world_to_local(nearest))
+			    #         self.mouse_joint.max_force = 50000
+			    #         self.mouse_joint.error_bias = (1-0.15) ** 60
+			    #         self.space.add(self.mouse_joint)
 			            
-			    elif event.type == MOUSEBUTTONUP:
-			        if self.mouse_joint != None:
-			            self.space.remove(self.mouse_joint)
-			            self.mouse_joint = None
+			    # elif event.type == MOUSEBUTTONUP:
+			    #     if self.mouse_joint != None:
+			    #         self.space.remove(self.mouse_joint)
+			    #         self.mouse_joint = None
 
 			#check to see if body of player has collided with box
 
 
 			# screen.fill(pygame.color.THECOLORS["yellow"])
-			self.screen.fill(self.sky)
+			if self.viz:
+				self.screen.fill(self.sky)
 
-			self.screen.blit(self.help_txt, (5, self.screen.get_height() - 20))
+				self.screen.blit(self.help_txt, (5, self.screen.get_height() - 20))
 
-			mouse_pos = pygame.mouse.get_pos()
+				mouse_pos = pygame.mouse.get_pos()
 
-			# Display help message
-			x = mouse_pos[0] / self.box_size * self.box_size
-			y = mouse_pos[1] / self.box_size * self.box_size
-			if (x,y) in self.box_texts:    
-			    txts = self.box_texts[(x,y)]
-			    i = 0
-			    for txt in txts:
-			        pos = (5,box_size * 2 + 10 + i*20)
-			        screen.blit(txt, pos)        
-			        i += 1
+				# Display help message
+				x = mouse_pos[0] / self.box_size * self.box_size
+				y = mouse_pos[1] / self.box_size * self.box_size
+				if (x,y) in self.box_texts:    
+				    txts = self.box_texts[(x,y)]
+				    i = 0
+				    for txt in txts:
+				        pos = (5,box_size * 2 + 10 + i*20)
+				        screen.blit(txt, pos)        
+				        i += 1
 
-			self.mouse_body.position = mouse_pos
+				self.mouse_body.position = mouse_pos
 
 			self.space.step(1./60)
 
 			self.space.debug_draw(self.draw_options)
-			pygame.display.flip()
+			
+			if self.viz:
+				pygame.display.flip()
+				pygame.display.set_caption("fps: " + str(self.clock.get_fps()))
 
 			self.clock.tick(60)
-			pygame.display.set_caption("fps: " + str(self.clock.get_fps()))
 
 
 if __name__ == "__main__":
 
-	body = ragdoll()
+	body = ragdoll(viz = True, arms = False)
 	body.run()
