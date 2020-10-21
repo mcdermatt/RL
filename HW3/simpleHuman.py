@@ -192,7 +192,7 @@ while True:
 
 	leftKneeAng = leftShin.angle - leftThigh.angle
 	rightKneeAng = rightShin.angle - rightThigh.angle
-	print(leftKneeAng,rightKneeAng)
+	# print(leftKneeAng,rightKneeAng)
 	h.begin = fell_over
     
 	for event in pygame.event.get():
