@@ -6,20 +6,23 @@ import pygame.color
 from pygame.locals import *
 import pickle
 import pygame
-
-#TODO:
-# take input from policy
-# run()
-# viz on/off
-# fast forward(?)
+import numpy as np
 
 class ragdoll:
 
-	def __init__(self,viz = True, arms = True):
+	torques = np.zeros([5,1])
+		#right knee
+		#left knee
+		#right hip
+		#left hip
+		#back
+
+	def __init__(self,viz = True, arms = True, torques = torques):
 
 		self.wX = 1600
 		self.wY = 800
 		self.dampingCoeff = 10000
+		self.torqueMult = 25000
 		self.foreground = (178,102,255,255) #foreground color
 		self.midground = (153,51,255,255) 
 		self.background = (127,0,255,255)
@@ -29,6 +32,7 @@ class ragdoll:
 		self.screen = pygame.display.set_mode((self.wX,self.wY))
 		self.clock = pygame.time.Clock()
 		self.viz = viz
+		self.torques = torques
 
 		if self.viz:
 			#init pygame
@@ -141,7 +145,7 @@ class ragdoll:
 		# Create and add the "goal" 
 		COLLTYPE_GOAL = 2
 		goal_body = pymunk.Body()
-		goal = pymunk.Poly(goal_body, [(10,self.wY-50),(10,self.wY),(self.wX-10,self.wY),(self.wX-10,self.wY-50)])
+		goal = pymunk.Poly(goal_body, [(10,self.wY-52),(10,self.wY),(self.wX-10,self.wY),(self.wX-10,self.wY-52)])
 		goal.color = self.floor
 		goal.collision_type = COLLTYPE_GOAL
 		self.space.add(goal)
@@ -179,6 +183,7 @@ class ragdoll:
 	    return True
 
 	def run(self):
+		step = 0
 		while True:
 
 			leftKneeAng = self.leftShin.angle - self.leftThigh.angle
@@ -186,6 +191,29 @@ class ragdoll:
 			# print(leftKneeAng,rightKneeAng)
 			self.h.begin = self.fell_over
 		    
+		 #    #Test
+			# if step%30 == 0:
+			# 	self.rightThigh.apply_force_at_local_point((100000,0),(0,0))
+			# 	self.rightThigh.apply_force_at_local_point((-100000,0),(0,-30))
+
+			#set joint torques according to input array
+			# for j in torques[:,step]:
+			self.rightShin.apply_force_at_local_point((-self.torques[0,step]*self.torqueMult,0),(0,0))
+			self.rightShin.apply_force_at_local_point((self.torques[0,step]*self.torqueMult,0),(0,-30))
+
+			self.leftShin.apply_force_at_local_point((-self.torques[1,step]*self.torqueMult,0),(0,0))
+			self.leftShin.apply_force_at_local_point((self.torques[1,step]*self.torqueMult,0),(0,-30))
+
+			self.rightThigh.apply_force_at_local_point((self.torques[2,step]*self.torqueMult,0),(0,0))
+			self.rightThigh.apply_force_at_local_point((-self.torques[2,step]*self.torqueMult,0),(0,-30))
+
+			self.leftThigh.apply_force_at_local_point((self.torques[3,step]*self.torqueMult,0),(0,0))
+			self.leftThigh.apply_force_at_local_point((-self.torques[3,step]*self.torqueMult,0),(0,-30))
+
+			self.back.apply_force_at_local_point((self.torques[4,step]*self.torqueMult,0),(0,0))
+			self.back.apply_force_at_local_point((-self.torques[4,step]*self.torqueMult,0),(0,-30))
+
+
 			for event in pygame.event.get():
 			    if event.type == QUIT:
 			        exit()
@@ -209,9 +237,11 @@ class ragdoll:
 			        # print("P")
 			        self.leftShin.apply_force_at_local_point((-100000,0),(0,0))
 			        self.leftShin.apply_force_at_local_point((100000,0),(0,-30))
-			    # elif event.type == KEYDOWN and event.key == K_e:
-			    #     print("E")
-			    #     back.apply_impulse_at_local_point((1000,0),(0,0))
+
+			    elif event.type == KEYDOWN and event.key == K_e:
+			        # print("P")
+			        self.back.apply_force_at_local_point((-100000,0),(0,0))
+			        self.back.apply_force_at_local_point((100000,0),(0,-30))
 
 			    #FOR DEBUG: Drag around ragdoll with mouse pointer
 
@@ -274,6 +304,7 @@ class ragdoll:
 				pygame.display.set_caption("fps: " + str(self.clock.get_fps()))
 
 			self.clock.tick(60)
+			step += 1
 
 
 if __name__ == "__main__":

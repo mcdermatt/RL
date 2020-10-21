@@ -18,7 +18,7 @@ background = (127,0,255,255)
 sky = (153,204,255,255)
 floor = (0,51,102,255)
 
-Arms = True
+Arms = False
 
 #init pygame
 pymunk.pygame_util.positive_y_is_up = False
@@ -218,9 +218,10 @@ while True:
 	        # print("P")
 	        leftShin.apply_force_at_local_point((-100000,0),(0,0))
 	        leftShin.apply_force_at_local_point((100000,0),(0,-30))
-	    # elif event.type == KEYDOWN and event.key == K_e:
-	    #     print("E")
-	    #     back.apply_impulse_at_local_point((1000,0),(0,0))
+	    elif event.type == KEYDOWN and event.key == K_e:
+			        # print("P")
+			        back.apply_force_at_local_point((-100000,0),(0,0))
+			        back.apply_force_at_local_point((100000,0),(0,-30))
 
 	    elif event.type == MOUSEBUTTONDOWN:
 	        if mouse_joint != None:
