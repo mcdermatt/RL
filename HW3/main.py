@@ -3,15 +3,19 @@ import numpy as np
 
 
 #TODO:
-# take input from policy
-# run()
-# viz on/off
-# fast forward(?)
 # check for clipping through ground plane
+# figure out what states to consider for policy
+# Reward Shaping- figure out best way(?)
+# change torques input to policy input
+		#rather than function of timestep, torques should be function of states
+ 
+torques = np.random.randn(5,500)
+viz = True
+playBackSpeed = 100
+numTrials = 10
 
-# torques = np.zeros([5,1000])
-torques = np.random.randn(5,1000)
-
-
-body = ragdoll(viz = True, arms = False, torques = torques)
-body.run()
+for trial in range(numTrials):
+	print("trial number ", trial)
+	torques = np.random.randn(5,500)
+	body = ragdoll(viz = viz, arms = True, torques = torques, playBackSpeed = playBackSpeed)
+	body.run()

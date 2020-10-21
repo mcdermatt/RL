@@ -17,21 +17,24 @@ class ragdoll:
 		#left hip
 		#back
 
-	def __init__(self,viz = True, arms = True, torques = torques):
+	def __init__(self,viz = True, arms = True, torques = torques, playBackSpeed = 1):
 
 		self.wX = 1600
 		self.wY = 800
+		self.startX = self.wX / 4
 		self.dampingCoeff = 10000
 		self.torqueMult = 25000
 		self.foreground = (178,102,255,255) #foreground color
 		self.midground = (153,51,255,255) 
 		self.background = (127,0,255,255)
-		self.sky = (153,204,255,255)
-		self.floor = (0,51,102,255)
+		self.floor = (96,96,96,255)
+		self.sky = (32,32,32,255)
+		self.fallen = False
 
 		self.screen = pygame.display.set_mode((self.wX,self.wY))
 		self.clock = pygame.time.Clock()
 		self.viz = viz
+		self.playBackSpeed = playBackSpeed
 		self.torques = torques
 
 		if self.viz:
@@ -51,6 +54,8 @@ class ragdoll:
 		self.space = pymunk.Space()
 		self.space.gravity = (0.0, 900.0)
 		self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
+		self.draw_options.flags = pymunk.SpaceDebugDrawOptions.DRAW_SHAPES
+
 
 		class Box: #stolen from stack overflow
 		    def __init__(ragdoll, p0=(10, 10), p1=(self.wX-10,self.wY-50), d=2):
@@ -67,18 +72,18 @@ class ragdoll:
 
 		#init body
 		#add right leg
-		self.rightShin = self.add_limb(self.space, (100,500), color = self.background)
-		self.rightThigh = self.add_limb(self.space, (100,400), thiccness = 15, color = self.background)
-		self.rightKnee = pymunk.PivotJoint(self.rightShin,self.rightThigh,(100,450))
+		self.rightShin = self.add_limb(self.space, (self.startX,500), color = self.background, friction = 1)
+		self.rightThigh = self.add_limb(self.space, (self.startX,400), thiccness = 15, color = self.background)
+		self.rightKnee = pymunk.PivotJoint(self.rightShin,self.rightThigh,(self.startX,450))
 		self.rightKneeLimits = pymunk.RotaryLimitJoint(self.rightShin,self.rightThigh,-2.5,0)
 		self.rightKneeDamp = pymunk.DampedRotarySpring(self.rightShin,self.rightThigh,0,0,self.dampingCoeff)
 		self.space.add(self.rightKnee)
 		self.space.add(self.rightKneeLimits)
 		self.space.add(self.rightKneeDamp)
 		#add left leg
-		self.leftShin = self.add_limb(self.space, (100,500), color = self.midground)
-		self.leftThigh = self.add_limb(self.space, (100,400), thiccness = 15, color = self.midground)
-		self.leftKnee = pymunk.PivotJoint(self.leftShin,self.leftThigh,(100,450))
+		self.leftShin = self.add_limb(self.space, (self.startX,500), color = self.midground, friction = 1)
+		self.leftThigh = self.add_limb(self.space, (self.startX,400), thiccness = 15, color = self.midground)
+		self.leftKnee = pymunk.PivotJoint(self.leftShin,self.leftThigh,(self.startX,450))
 		self.leftKneeLimits = pymunk.RotaryLimitJoint(self.leftShin,self.leftThigh,-2.5,0)
 		self.leftKneeDamp = pymunk.DampedRotarySpring(self.leftShin,self.leftThigh,0,0,self.dampingCoeff)
 		self.space.add(self.leftKneeDamp)
@@ -86,22 +91,22 @@ class ragdoll:
 		self.space.add(self.leftKneeLimits)
 		#add butt & hips
 		buttOffset = 10 
-		self.butt = self.add_limb(self.space,(100-buttOffset,320), length = 10, thiccness = 17,color = self.midground, COLLTYPE = 3)
-		self.rightHip = pymunk.PivotJoint(self.rightThigh,self.butt,(100,350))
+		self.butt = self.add_limb(self.space,(self.startX-buttOffset,320), length = 10, thiccness = 17,color = self.midground, COLLTYPE = 3)
+		self.rightHip = pymunk.PivotJoint(self.rightThigh,self.butt,(self.startX,350))
 		self.rightHipLimits = pymunk.RotaryLimitJoint(self.rightThigh,self.butt,-1,3)
 		self.rightHipDamp = pymunk.DampedRotarySpring(self.rightThigh,self.butt,0,0,self.dampingCoeff)
 		self.space.add(self.rightHipDamp)
 		self.space.add(self.rightHip)
 		self.space.add(self.rightHipLimits)
-		self.leftHip = pymunk.PivotJoint(self.leftThigh,self.butt,(100,350))
+		self.leftHip = pymunk.PivotJoint(self.leftThigh,self.butt,(self.startX,350))
 		self.leftHipLimits = pymunk.RotaryLimitJoint(self.leftThigh,self.butt,-1,3)
 		self.leftHipDamp = pymunk.DampedRotarySpring(self.leftThigh,self.butt,0,0,self.dampingCoeff)
 		self.space.add(self.leftHipDamp)
 		self.space.add(self.leftHip)
 		self.space.add(self.leftHipLimits)
 		#add back
-		self.back = self.add_limb(self.space,(100,245), mass = 2, length = 30, thiccness = 15, color = self.midground, COLLTYPE = 3)# filter = 0b01)
-		self.spine = pymunk.PivotJoint(self.butt,self.back,(100,300))
+		self.back = self.add_limb(self.space,(self.startX,245), mass = 2, length = 30, thiccness = 15, color = self.midground, COLLTYPE = 3)# filter = 0b01)
+		self.spine = pymunk.PivotJoint(self.butt,self.back,(self.startX,300))
 		self.spineLimits = pymunk.RotaryLimitJoint(self.butt,self.back,-0.25,1)
 		self.spineDamp = pymunk.DampedRotarySpring(self.butt,self.back,0,0,self.dampingCoeff)
 		self.space.add(self.spineDamp)
@@ -110,34 +115,34 @@ class ragdoll:
 		if arms:
 			#add head
 			shoulderHeight = 240
-			self.head = self.add_limb(self.space,(100,shoulderHeight - 50), length = 10, thiccness = 22,color = self.midground, COLLTYPE = 3)
-			self.neck = pymunk.PivotJoint(self.back,self.head,(100, shoulderHeight - 40))
+			self.head = self.add_limb(self.space,(self.startX,shoulderHeight - 50), length = 10, thiccness = 22,color = self.midground, COLLTYPE = 3)
+			self.neck = pymunk.PivotJoint(self.back,self.head,(self.startX, shoulderHeight - 40))
 			self.neckLimits = pymunk.RotaryLimitJoint(self.back,self.head,-0.2,0.8)
 			self.space.add(self.neck)
 			self.space.add(self.neckLimits)
 			#add right arm
-			self.rightLowerArm = self.add_limb(self.space, (100,shoulderHeight+80), color = self.foreground, COLLTYPE = 2)
-			self.rightUpperArm = self.add_limb(self.space, (100,shoulderHeight), thiccness = 12, color = self.foreground, COLLTYPE = 2)
-			self.rightElbow = pymunk.PivotJoint(self.rightLowerArm,self.rightUpperArm,(100,shoulderHeight+50))
+			self.rightLowerArm = self.add_limb(self.space, (self.startX,shoulderHeight+80), color = self.foreground, COLLTYPE = 2)
+			self.rightUpperArm = self.add_limb(self.space, (self.startX,shoulderHeight), thiccness = 12, color = self.foreground, COLLTYPE = 2)
+			self.rightElbow = pymunk.PivotJoint(self.rightLowerArm,self.rightUpperArm,(self.startX,shoulderHeight+50))
 			self.rightElbowLimits = pymunk.RotaryLimitJoint(self.rightLowerArm,self.rightUpperArm,0,2.2)
 			self.rightElbowDamp = pymunk.DampedRotarySpring(self.rightLowerArm,self.rightUpperArm,0,0,self.dampingCoeff)
 			self.space.add(self.rightElbow)
 			self.space.add(self.rightElbowLimits)
 			self.space.add(self.rightElbowDamp)
 			#add left arm
-			self.leftUpperArm = self.add_limb(self.space, (100,shoulderHeight), thiccness = 12, color = self.background, COLLTYPE = 2)
-			self.leftLowerArm = self.add_limb(self.space, (100,shoulderHeight+80), color = self.background, COLLTYPE = 2)
-			self.leftElbow = pymunk.PivotJoint(self.leftLowerArm,self.leftUpperArm,(100,shoulderHeight+50))
+			self.leftUpperArm = self.add_limb(self.space, (self.startX,shoulderHeight), thiccness = 12, color = self.background, COLLTYPE = 2)
+			self.leftLowerArm = self.add_limb(self.space, (self.startX,shoulderHeight+80), color = self.background, COLLTYPE = 2)
+			self.leftElbow = pymunk.PivotJoint(self.leftLowerArm,self.leftUpperArm,(self.startX,shoulderHeight+50))
 			self.leftElbowLimits = pymunk.RotaryLimitJoint(self.leftLowerArm,self.leftUpperArm,0,2.2)
 			self.leftElbowDamp = pymunk.DampedRotarySpring(self.leftLowerArm,self.leftUpperArm,0,0,self.dampingCoeff)
 			self.space.add(self.leftElbow)
 			self.space.add(self.leftElbowLimits)
 			self.space.add(self.leftElbowDamp)
-			self.rightShoulder = pymunk.PivotJoint(self.rightUpperArm,self.back,(100,shoulderHeight-20))
+			self.rightShoulder = pymunk.PivotJoint(self.rightUpperArm,self.back,(self.startX,shoulderHeight-20))
 			self.rightShoulderDamp = pymunk.DampedRotarySpring(self.rightUpperArm,self.back,0,0,self.dampingCoeff)
 			self.space.add(self.rightShoulder)
 			self.space.add(self.rightShoulderDamp)
-			self.leftShoulder = pymunk.PivotJoint(self.leftUpperArm,self.back,(100,shoulderHeight-20))
+			self.leftShoulder = pymunk.PivotJoint(self.leftUpperArm,self.back,(self.startX,shoulderHeight-20))
 			self.leftShoulderDamp = pymunk.DampedRotarySpring(self.leftUpperArm,self.back,0,0,self.dampingCoeff)
 			self.space.add(self.leftShoulder)
 			self.space.add(self.leftShoulderDamp)
@@ -153,12 +158,12 @@ class ragdoll:
 		COLLTYPE_BACK = 3
 		self.h = self.space.add_collision_handler(COLLTYPE_BACK, COLLTYPE_GOAL)
 
-	def add_limb(self,space,pos,length = 30, mass = 2, thiccness = 10, color = (100,100,100,255), COLLTYPE = 1):#filter = 0b100):
+	def add_limb(self,space,pos,length = 30, mass = 2, thiccness = 10, color = (100,100,100,255), COLLTYPE = 1, friction = 0.7):#filter = 0b100):
 		body = pymunk.Body()
 		body.position = Vec2d(pos)
 		shape = pymunk.Segment(body, (0,length), (0,-length), thiccness)
 		shape.mass = mass
-		shape.friction = 0.7
+		shape.friction = friction
 		shape.color = color
 		# COLLTYPE_BACK = 3
 		if COLLTYPE == 1:
@@ -180,11 +185,13 @@ class ragdoll:
 	def fell_over(self,space, arbiter, x):
 	    print("player fell over at x =", self.back.position[0])
 	    # pygame.quit()
+	    self.fallen = True
 	    return True
 
 	def run(self):
 		step = 0
-		while True:
+		self.fallen = False
+		while self.fallen == False:
 
 			leftKneeAng = self.leftShin.angle - self.leftThigh.angle
 			rightKneeAng = self.rightShin.angle - self.rightThigh.angle
@@ -197,22 +204,25 @@ class ragdoll:
 			# 	self.rightThigh.apply_force_at_local_point((-100000,0),(0,-30))
 
 			#set joint torques according to input array
-			# for j in torques[:,step]:
-			self.rightShin.apply_force_at_local_point((-self.torques[0,step]*self.torqueMult,0),(0,0))
-			self.rightShin.apply_force_at_local_point((self.torques[0,step]*self.torqueMult,0),(0,-30))
+			try:
+				self.rightShin.apply_force_at_local_point((-self.torques[0,step]*self.torqueMult,0),(0,0))
+				self.rightShin.apply_force_at_local_point((self.torques[0,step]*self.torqueMult,0),(0,-30))
 
-			self.leftShin.apply_force_at_local_point((-self.torques[1,step]*self.torqueMult,0),(0,0))
-			self.leftShin.apply_force_at_local_point((self.torques[1,step]*self.torqueMult,0),(0,-30))
+				self.leftShin.apply_force_at_local_point((-self.torques[1,step]*self.torqueMult,0),(0,0))
+				self.leftShin.apply_force_at_local_point((self.torques[1,step]*self.torqueMult,0),(0,-30))
 
-			self.rightThigh.apply_force_at_local_point((self.torques[2,step]*self.torqueMult,0),(0,0))
-			self.rightThigh.apply_force_at_local_point((-self.torques[2,step]*self.torqueMult,0),(0,-30))
+				self.rightThigh.apply_force_at_local_point((self.torques[2,step]*self.torqueMult,0),(0,0))
+				self.rightThigh.apply_force_at_local_point((-self.torques[2,step]*self.torqueMult,0),(0,-30))
 
-			self.leftThigh.apply_force_at_local_point((self.torques[3,step]*self.torqueMult,0),(0,0))
-			self.leftThigh.apply_force_at_local_point((-self.torques[3,step]*self.torqueMult,0),(0,-30))
+				self.leftThigh.apply_force_at_local_point((self.torques[3,step]*self.torqueMult,0),(0,0))
+				self.leftThigh.apply_force_at_local_point((-self.torques[3,step]*self.torqueMult,0),(0,-30))
 
-			self.back.apply_force_at_local_point((self.torques[4,step]*self.torqueMult,0),(0,0))
-			self.back.apply_force_at_local_point((-self.torques[4,step]*self.torqueMult,0),(0,-30))
-
+				self.back.apply_force_at_local_point((self.torques[4,step]*self.torqueMult,0),(0,0))
+				self.back.apply_force_at_local_point((-self.torques[4,step]*self.torqueMult,0),(0,-30))
+			
+			#player is stuck for longer than torque input
+			except:
+				break
 
 			for event in pygame.event.get():
 			    if event.type == QUIT:
@@ -278,7 +288,7 @@ class ragdoll:
 			if self.viz:
 				self.screen.fill(self.sky)
 
-				self.screen.blit(self.help_txt, (5, self.screen.get_height() - 20))
+				# self.screen.blit(self.help_txt, (5, self.screen.get_height() - 20))
 
 				mouse_pos = pygame.mouse.get_pos()
 
@@ -303,9 +313,8 @@ class ragdoll:
 				pygame.display.flip()
 				pygame.display.set_caption("fps: " + str(self.clock.get_fps()))
 
-			self.clock.tick(60)
+			self.clock.tick(60*self.playBackSpeed)
 			step += 1
-
 
 if __name__ == "__main__":
 
