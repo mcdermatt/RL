@@ -8,8 +8,11 @@ import pickle
 import pygame
 
 
-wX = 1600
-wY = 800
+# wX = 1600
+# wY = 800
+wX = 1000
+wY = 700
+
 dampingCoeff = 10000
 
 foreground = (178,102,255,255)

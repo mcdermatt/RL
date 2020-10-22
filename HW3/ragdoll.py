@@ -17,10 +17,12 @@ class ragdoll:
 		#left hip
 		#back
 
-	def __init__(self, pol, viz = True, arms = True, torques = torques, playBackSpeed = 1):
+	def __init__(self, pol = None, viz = True, arms = True, torques = torques, playBackSpeed = 1):
 
-		self.wX = 1600
-		self.wY = 800
+		# self.wX = 1600
+		# self.wY = 800
+		self.wX = 1000
+		self.wY = 600
 		self.startX = self.wX / 4
 		self.dampingCoeff = 10000
 		self.torqueMult = 25000
@@ -72,11 +74,13 @@ class ragdoll:
 		Box()
 
 		#init body
+		self.kneeMax = 0
+		self.kneeMin = -2.5
 		#add right leg
 		self.rightShin = self.add_limb(self.space, (self.startX,500), color = self.background, friction = 1)
 		self.rightThigh = self.add_limb(self.space, (self.startX,400), thiccness = 15, color = self.background)
 		self.rightKnee = pymunk.PivotJoint(self.rightShin,self.rightThigh,(self.startX,450))
-		self.rightKneeLimits = pymunk.RotaryLimitJoint(self.rightShin,self.rightThigh,-2.5,0)
+		self.rightKneeLimits = pymunk.RotaryLimitJoint(self.rightShin,self.rightThigh,self.kneeMin,self.kneeMax)
 		self.rightKneeDamp = pymunk.DampedRotarySpring(self.rightShin,self.rightThigh,0,0,self.dampingCoeff)
 		self.space.add(self.rightKnee)
 		self.space.add(self.rightKneeLimits)
@@ -85,7 +89,7 @@ class ragdoll:
 		self.leftShin = self.add_limb(self.space, (self.startX,500), color = self.midground, friction = 1)
 		self.leftThigh = self.add_limb(self.space, (self.startX,400), thiccness = 15, color = self.midground)
 		self.leftKnee = pymunk.PivotJoint(self.leftShin,self.leftThigh,(self.startX,450))
-		self.leftKneeLimits = pymunk.RotaryLimitJoint(self.leftShin,self.leftThigh,-2.5,0)
+		self.leftKneeLimits = pymunk.RotaryLimitJoint(self.leftShin,self.leftThigh,self.kneeMin,self.kneeMax)
 		self.leftKneeDamp = pymunk.DampedRotarySpring(self.leftShin,self.leftThigh,0,0,self.dampingCoeff)
 		self.space.add(self.leftKneeDamp)
 		self.space.add(self.leftKnee)
@@ -159,6 +163,11 @@ class ragdoll:
 		COLLTYPE_BACK = 3
 		self.h = self.space.add_collision_handler(COLLTYPE_BACK, COLLTYPE_GOAL)
 
+		self.pStep = 3
+		self.vStep = 3
+		if pol == None:
+			self.initPolicy()
+
 	def add_limb(self,space,pos,length = 30, mass = 2, thiccness = 10, color = (100,100,100,255), COLLTYPE = 1, friction = 0.7):#filter = 0b100):
 		body = pymunk.Body()
 		body.position = Vec2d(pos)
@@ -187,10 +196,11 @@ class ragdoll:
 	    print("player fell over at x =", self.back.position[0])
 	    # pygame.quit()
 	    self.fallen = True
+	    self.calculate_reward()
 	    return True
 
 	def get_states(self):
-		"""gets positions and velocities of each joint"""
+		"""gets positions and velocities of each joint in Rad and Rad/s (Rounded to nearest pstep/ vstep incrament)"""
 
 		#get angles
 		self.rkp = self.rightShin.angle - self.rightThigh.angle
@@ -204,15 +214,54 @@ class ragdoll:
 		self.rhv = self.rightThigh.angular_velocity - self.butt.angular_velocity
 		self.lhv = self.leftThigh.angular_velocity - self.butt.angular_velocity
 		self.bv = self.butt.angular_velocity - self.back.angular_velocity
+
+		#get height of butt off of ground
+		self.buttHeight = self.butt.position
 		
-		#TODO round states to nearest incrament
-		statevec = np.array([self.rkp,self.lkp,self.rhp,self.lhp,self.bp,self.rkv,self.lkv,self.rhv,self.lhv,self.bv])
+		statevec = np.array([self.rkp,self.lkp,self.rhp,self.lhp,self.bp,self.rkv,self.lkv,self.rhv,self.lhv,self.bv,self.buttHeight])
+		
+		#round statevec to nearest incrament
+		# statevec = np.append(np.floor(statevec[:5]*self.pStep/(self.kneeMax-self.kneeMin)), np.floor(statevec[5:12]*self.vStep))
+		statevec[:5] = np.floor(statevec[:5]*self.pStep/(self.kneeMax-self.kneeMin))
+		
+		#saturate positions outside joint limits
+		for i in range(5):
+			if statevec[i] < 0:
+				statevec[i] = 0
+			if statevec[i] > self.pStep - 1:
+				statevec[i] = self.pStep - 1
+		for j in range(6):
+			if statevec[j] < 0:
+				statevec[j] = 0
+			if statevec[j] > self.vStep - 1:
+				statevec[j] = self.vStep - 1
+
+		# print(self.rkp)
+		# statevec = np.floor(statevec[:2]*self.pStep/(self.kneeMax-self.kneeMin))
+		
+		print(statevec)
 		return statevec
 
 	def activate_joints(self):
 		"""applys torques to joints according to state vector and current policy"""
 
+		# self.rightShin.apply_force_at_local_point((-self.torques[0,step]*self.torqueMult,0),(0,0))
+		# self.rightShin.apply_force_at_local_point((self.torques[0,step]*self.torqueMult,0),(0,-30))
 		pass
+
+	def calculate_reward(self):
+		'''calculates reward for current trial'''
+		
+		pass
+
+	def initPolicy(self):
+		"""makes initial random policy"""
+		print("starting new policy")
+		self.pol = np.random.rand(self.pStep, self.pStep, self.pStep, self.pStep, self.pStep, self.vStep, self.vStep, self.vStep, self.vStep, self.vStep, self.pStep, 5)
+		# [rkp, lkp, rhp, lhp, bp, rkv, lkv, rhv, lhv, bv, buttHeight, joint actions]
+		self.pol[self.pol < 0.33] = -1
+		self.pol[(self.pol < 0.66) & (self.pol > 0.33)] = 0
+		self.pol[self.pol > 0.66] = 1
 
 	def run(self):
 		step = 0

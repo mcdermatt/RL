@@ -12,19 +12,10 @@ torques = np.random.randn(5,500)
 viz = True
 playBackSpeed = 100
 numTrials = 10
-
-#consider moving init policy to ragdoll 
-pStep = 3
-vStep = 3
-pol = np.random.rand(pStep, pStep, pStep, pStep, pStep, vStep, vStep, vStep, vStep, vStep, 5)
-# [rkp, lkp, rhp, lhp, bp, rkv, lkv, rhv, lhv, bv, joint actions]
-pol[pol < 0.33] = -1
-pol[(pol < 0.66) & (pol > 0.33)] = 0
-pol[pol > 0.66] = 1
-
+pol = None
 
 for trial in range(numTrials):
 	print("trial number ", trial)
 	torques = np.random.randn(5,500)
-	body = ragdoll(pol,viz = viz, arms = False, torques = torques, playBackSpeed = playBackSpeed)
+	body = ragdoll(pol = pol, viz = viz, arms = False, torques = torques, playBackSpeed = playBackSpeed)
 	body.run()
