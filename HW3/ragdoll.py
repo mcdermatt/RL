@@ -17,7 +17,7 @@ class ragdoll:
 		#left hip
 		#back
 
-	def __init__(self,viz = True, arms = True, torques = torques, playBackSpeed = 1):
+	def __init__(self, pol, viz = True, arms = True, torques = torques, playBackSpeed = 1):
 
 		self.wX = 1600
 		self.wY = 800
@@ -36,6 +36,7 @@ class ragdoll:
 		self.viz = viz
 		self.playBackSpeed = playBackSpeed
 		self.torques = torques
+		self.pol = pol
 
 		if self.viz:
 			#init pygame
@@ -188,14 +189,40 @@ class ragdoll:
 	    self.fallen = True
 	    return True
 
+	def get_states(self):
+		"""gets positions and velocities of each joint"""
+
+		#get angles
+		self.rkp = self.rightShin.angle - self.rightThigh.angle
+		self.lkp = self.leftShin.angle - self.leftThigh.angle
+		self.rhp = self.rightThigh.angle - self.butt.angle
+		self.lhp = self.leftThigh.angle - self.butt.angle
+		self.bp = self.butt.angle - self.back.angle
+		#get vels
+		self.rkv = self.rightShin.angular_velocity - self.rightThigh.angular_velocity
+		self.lkv = self.leftShin.angular_velocity - self.leftThigh.angular_velocity
+		self.rhv = self.rightThigh.angular_velocity - self.butt.angular_velocity
+		self.lhv = self.leftThigh.angular_velocity - self.butt.angular_velocity
+		self.bv = self.butt.angular_velocity - self.back.angular_velocity
+		
+		#TODO round states to nearest incrament
+		statevec = np.array([self.rkp,self.lkp,self.rhp,self.lhp,self.bp,self.rkv,self.lkv,self.rhv,self.lhv,self.bv])
+		return statevec
+
+	def activate_joints(self):
+		"""applys torques to joints according to state vector and current policy"""
+
+		pass
+
 	def run(self):
 		step = 0
 		self.fallen = False
 		while self.fallen == False:
 
-			leftKneeAng = self.leftShin.angle - self.leftThigh.angle
-			rightKneeAng = self.rightShin.angle - self.rightThigh.angle
-			# print(leftKneeAng,rightKneeAng)
+			self.get_states()
+
+			self.activate_joints()
+
 			self.h.begin = self.fell_over
 		    
 		 #    #Test
@@ -203,26 +230,26 @@ class ragdoll:
 			# 	self.rightThigh.apply_force_at_local_point((100000,0),(0,0))
 			# 	self.rightThigh.apply_force_at_local_point((-100000,0),(0,-30))
 
-			#set joint torques according to input array
-			try:
-				self.rightShin.apply_force_at_local_point((-self.torques[0,step]*self.torqueMult,0),(0,0))
-				self.rightShin.apply_force_at_local_point((self.torques[0,step]*self.torqueMult,0),(0,-30))
+			#set joint torques according to input torques array
+			# try:
+			# 	self.rightShin.apply_force_at_local_point((-self.torques[0,step]*self.torqueMult,0),(0,0))
+			# 	self.rightShin.apply_force_at_local_point((self.torques[0,step]*self.torqueMult,0),(0,-30))
 
-				self.leftShin.apply_force_at_local_point((-self.torques[1,step]*self.torqueMult,0),(0,0))
-				self.leftShin.apply_force_at_local_point((self.torques[1,step]*self.torqueMult,0),(0,-30))
+			# 	self.leftShin.apply_force_at_local_point((-self.torques[1,step]*self.torqueMult,0),(0,0))
+			# 	self.leftShin.apply_force_at_local_point((self.torques[1,step]*self.torqueMult,0),(0,-30))
 
-				self.rightThigh.apply_force_at_local_point((self.torques[2,step]*self.torqueMult,0),(0,0))
-				self.rightThigh.apply_force_at_local_point((-self.torques[2,step]*self.torqueMult,0),(0,-30))
+			# 	self.rightThigh.apply_force_at_local_point((self.torques[2,step]*self.torqueMult,0),(0,0))
+			# 	self.rightThigh.apply_force_at_local_point((-self.torques[2,step]*self.torqueMult,0),(0,-30))
 
-				self.leftThigh.apply_force_at_local_point((self.torques[3,step]*self.torqueMult,0),(0,0))
-				self.leftThigh.apply_force_at_local_point((-self.torques[3,step]*self.torqueMult,0),(0,-30))
+			# 	self.leftThigh.apply_force_at_local_point((self.torques[3,step]*self.torqueMult,0),(0,0))
+			# 	self.leftThigh.apply_force_at_local_point((-self.torques[3,step]*self.torqueMult,0),(0,-30))
 
-				self.back.apply_force_at_local_point((self.torques[4,step]*self.torqueMult,0),(0,0))
-				self.back.apply_force_at_local_point((-self.torques[4,step]*self.torqueMult,0),(0,-30))
+			# 	self.back.apply_force_at_local_point((self.torques[4,step]*self.torqueMult,0),(0,0))
+			# 	self.back.apply_force_at_local_point((-self.torques[4,step]*self.torqueMult,0),(0,-30))
 			
-			#player is stuck for longer than torque input
-			except:
-				break
+			# #player is stuck for longer than torque input
+			# except:
+			# 	break
 
 			for event in pygame.event.get():
 			    if event.type == QUIT:
@@ -254,7 +281,6 @@ class ragdoll:
 			        self.back.apply_force_at_local_point((100000,0),(0,-30))
 
 			    #FOR DEBUG: Drag around ragdoll with mouse pointer
-
 			    # elif event.type == MOUSEBUTTONDOWN:
 			    #     if self.mouse_joint != None:
 			    #         space.remove(mouse_joint)
