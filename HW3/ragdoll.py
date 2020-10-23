@@ -25,7 +25,7 @@ class ragdoll:
 		self.wY = 600
 		self.startX = self.wX / 4
 		self.dampingCoeff = 10000
-		self.torqueMult = 25000
+		self.torqueMult = 50000 #25000
 		self.foreground = (178,102,255,255) #foreground color
 		self.midground = (153,51,255,255) 
 		self.background = (127,0,255,255)
@@ -113,6 +113,8 @@ class ragdoll:
 		self.space.add(self.leftHipDamp)
 		self.space.add(self.leftHip)
 		self.space.add(self.leftHipLimits)
+		self.noSplits = pymunk.RotaryLimitJoint(self.leftThigh,self.rightThigh,-2,2)
+		self.space.add(self.noSplits)
 		#add back
 		self.back = self.add_limb(self.space,(self.startX,245), mass = 2, length = 30, thiccness = 15, color = self.midground, COLLTYPE = 3)# filter = 0b01)
 		self.spine = pymunk.PivotJoint(self.butt,self.back,(self.startX,300))
@@ -169,8 +171,11 @@ class ragdoll:
 
 		self.pStep = 3
 		self.vStep = 3
-		if pol == None:
-			self.initPolicy()
+		try:
+			if pol == None:
+				self.initPolicy()
+		except:
+			pass
 
 	def add_limb(self,space,pos,length = 30, mass = 2, thiccness = 10, color = (100,100,100,255), COLLTYPE = 1, friction = 0.7):#filter = 0b100):
 		body = pymunk.Body()
@@ -214,7 +219,8 @@ class ragdoll:
 		self.bp = self.back.angle - self.butt.angle 
 		#get height of butt off of ground
 		self.buttHeight = np.floor((self.wY - self.butt.position[1] - 50)/50) #need to translate from pixel value to discrete step
-
+		if self.buttHeight > 4:
+			self.buttHeight = 4
 		#get vels
 		self.rkv = self.rightShin.angular_velocity - self.rightThigh.angular_velocity
 		self.lkv = self.leftShin.angular_velocity - self.leftThigh.angular_velocity
@@ -275,11 +281,32 @@ class ragdoll:
 		self.leftShin.apply_force_at_local_point((self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
 															int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
 															int(self.statevec[10]),1]*self.torqueMult,0),(0,-30))
+		#Right Thigh
+		self.rightThigh.apply_force_at_local_point((-self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
+															int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
+															int(self.statevec[10]),2]*self.torqueMult,0),(0,0))
+		self.rightThigh.apply_force_at_local_point((self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
+															int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
+															int(self.statevec[10]),2]*self.torqueMult,0),(0,-30))
+		#Left Thigh
+		self.leftThigh.apply_force_at_local_point((-self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
+															int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
+															int(self.statevec[10]),3]*self.torqueMult,0),(0,0))
+		self.leftThigh.apply_force_at_local_point((self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
+															int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
+															int(self.statevec[10]),3]*self.torqueMult,0),(0,-30))
+		#back
+		self.back.apply_force_at_local_point((-self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
+															int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
+															int(self.statevec[10]),4]*self.torqueMult,0),(0,0))
+		self.back.apply_force_at_local_point((self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
+															int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
+															int(self.statevec[10]),4]*self.torqueMult,0),(0,-30))
 		pass
 
 	def calculate_reward(self):
 		'''calculates reward for current trial'''
-		
+		self.reward = self.back.position[0]
 		pass
 
 	def initPolicy(self):
@@ -303,33 +330,12 @@ class ragdoll:
 
 			self.activate_joints()
 
+			#upper body or butt has touched ground
 			self.h.begin = self.fell_over
-		    
-		 #    #Test
-			# if step%30 == 0:
-			# 	self.rightThigh.apply_force_at_local_point((100000,0),(0,0))
-			# 	self.rightThigh.apply_force_at_local_point((-100000,0),(0,-30))
-
-			#set joint torques according to input torques array
-			# try:
-			# 	self.rightShin.apply_force_at_local_point((-self.torques[0,step]*self.torqueMult,0),(0,0))
-			# 	self.rightShin.apply_force_at_local_point((self.torques[0,step]*self.torqueMult,0),(0,-30))
-
-			# 	self.leftShin.apply_force_at_local_point((-self.torques[1,step]*self.torqueMult,0),(0,0))
-			# 	self.leftShin.apply_force_at_local_point((self.torques[1,step]*self.torqueMult,0),(0,-30))
-
-			# 	self.rightThigh.apply_force_at_local_point((self.torques[2,step]*self.torqueMult,0),(0,0))
-			# 	self.rightThigh.apply_force_at_local_point((-self.torques[2,step]*self.torqueMult,0),(0,-30))
-
-			# 	self.leftThigh.apply_force_at_local_point((self.torques[3,step]*self.torqueMult,0),(0,0))
-			# 	self.leftThigh.apply_force_at_local_point((-self.torques[3,step]*self.torqueMult,0),(0,-30))
-
-			# 	self.back.apply_force_at_local_point((self.torques[4,step]*self.torqueMult,0),(0,0))
-			# 	self.back.apply_force_at_local_point((-self.torques[4,step]*self.torqueMult,0),(0,-30))
-			
-			# #player is stuck for longer than torque input
-			# except:
-			# 	break
+		    #timed out
+			if step > 1000:
+				self.fallen = True
+				self.calculate_reward()
 
 			for event in pygame.event.get():
 			    if event.type == QUIT:
@@ -386,8 +392,6 @@ class ragdoll:
 			    #     if self.mouse_joint != None:
 			    #         self.space.remove(self.mouse_joint)
 			    #         self.mouse_joint = None
-
-			#check to see if body of player has collided with box
 
 
 			# screen.fill(pygame.color.THECOLORS["yellow"])
