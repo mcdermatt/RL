@@ -17,7 +17,13 @@ class ragdoll:
 		#left hip
 		#back
 
-	def __init__(self, pol = None, viz = True, arms = True, torques = torques, playBackSpeed = 1):
+	#how I did skrrt
+	q = np.ones([3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2]) #[states, actions, (avg reward, #occurences)]
+
+	# more memory efficient, needs model of how actions will change agent to next state
+	# q = np.ones([3,3,3,3,3,3,3,3,3,3,3,2]) # [states, (avg reward, occurences)]
+
+	def __init__(self, pol = None, q = q, viz = True, arms = True, playBackSpeed = 1):
 
 		# self.wX = 1600
 		# self.wY = 800
@@ -37,8 +43,8 @@ class ragdoll:
 		self.clock = pygame.time.Clock()
 		self.viz = viz
 		self.playBackSpeed = playBackSpeed
-		self.torques = torques
 		self.pol = pol
+		self.q = q
 
 		if self.viz:
 			#init pygame
@@ -177,6 +183,11 @@ class ragdoll:
 		except:
 			pass
 
+		self.history = np.zeros([1,11])
+		self.history[0,5] = 4 #sim starts with hips at pos 4, all other states 0
+		self.history = self.history.astype(int)
+
+
 	def add_limb(self,space,pos,length = 30, mass = 2, thiccness = 10, color = (100,100,100,255), COLLTYPE = 1, friction = 0.7):#filter = 0b100):
 		body = pymunk.Body()
 		body.position = Vec2d(pos)
@@ -206,6 +217,7 @@ class ragdoll:
 	    # pygame.quit()
 	    self.fallen = True
 	    self.calculate_reward()
+	    self.update_values()
 	    return True
 
 	def get_states(self):
@@ -258,6 +270,7 @@ class ragdoll:
 		# print(statevec)
 		# return statevec
 		self.statevec = statevec.astype(int)
+		# self.statevec = [self.statevec]
 
 	def activate_joints(self):
 		"""applys torques to joints according to state vector and current policy"""
@@ -309,6 +322,12 @@ class ragdoll:
 		self.reward = self.back.position[0]
 		pass
 
+	def update_values(self):
+		'''Updates values of each state after conclusion of trial'''
+		for i in range(np.shape(self.history)[0]):
+			self.pol
+		pass
+
 	def initPolicy(self):
 		"""makes initial random policy"""
 		print("starting new policy")
@@ -327,8 +346,11 @@ class ragdoll:
 		while self.fallen == False:
 
 			self.get_states()
+			self.activate_joints() #send torque commands to joints as func of states from current policy
 
-			self.activate_joints()
+			#record history of current trajectory
+			self.history = np.concatenate((self.history,[self.statevec]),axis = 0)
+			# print(self.history)
 
 			#upper body or butt has touched ground
 			self.h.begin = self.fell_over

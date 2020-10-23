@@ -7,26 +7,32 @@ import numpy as np
 # Reward Shaping- figure out best way(?)
 # change torques input to policy input
 		#rather than function of timestep, torques should be function of states
- 
-# torques = np.random.randn(5,500)
+# read pixels to pong
+# implement Deep RL for second part of experiment
+
 viz = True
 arms = False
-playBackSpeed = 1
-numTrials = 1000
+playBackSpeed = 10 #0.1
+numTrials = 100
 pol = None
 maxReward = 0
+
+body = ragdoll(viz = viz, arms = arms, playBackSpeed = playBackSpeed)
+body.run()
+q = body.q
 
 for trial in range(numTrials):
 	print("trial number ", trial)
 	torques = np.random.randn(5,500)
 	# body = ragdoll(pol = pol, viz = viz, arms = arms, torques = torques, playBackSpeed = playBackSpeed)
-	body = ragdoll(viz = viz, arms = arms, torques = torques, playBackSpeed = playBackSpeed)
+	body = ragdoll(viz = viz, q = q, arms = arms, playBackSpeed = playBackSpeed)
 	body.run()
+	q = body.q
 	if body.reward > maxReward:
 		pol = body.pol
 		maxReward = body.reward
 
-body = ragdoll(pol = pol, viz = True, arms = arms, torques = torques, playBackSpeed = 1)
+body = ragdoll(pol = pol, viz = True, arms = arms, playBackSpeed = 1)
 body.run()
 
 np.save("randomPolicy",pol)
