@@ -10,7 +10,7 @@ import numpy as np
  
 torques = np.random.randn(5,500)
 viz = True
-playBackSpeed = 100
+playBackSpeed = 1
 numTrials = 10
 pol = None
 
@@ -18,4 +18,6 @@ for trial in range(numTrials):
 	print("trial number ", trial)
 	torques = np.random.randn(5,500)
 	body = ragdoll(pol = pol, viz = viz, arms = False, torques = torques, playBackSpeed = playBackSpeed)
+	# body = ragdoll(viz = viz, arms = False, torques = torques, playBackSpeed = playBackSpeed)
+	pol = body.pol
 	body.run()
