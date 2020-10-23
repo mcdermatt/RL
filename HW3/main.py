@@ -12,8 +12,8 @@ import numpy as np
 
 viz = True
 arms = False
-playBackSpeed = 10 #0.1
-numTrials = 100
+playBackSpeed = 1 #0.1
+numTrials = 500
 pol = None
 maxReward = 0
 
@@ -24,15 +24,12 @@ q = body.q
 for trial in range(numTrials):
 	print("trial number ", trial)
 	torques = np.random.randn(5,500)
-	# body = ragdoll(pol = pol, viz = viz, arms = arms, torques = torques, playBackSpeed = playBackSpeed)
-	body = ragdoll(viz = viz, q = q, arms = arms, playBackSpeed = playBackSpeed)
+	body = ragdoll(pol = pol, viz = viz, arms = arms, playBackSpeed = playBackSpeed, eps = 0.1)
 	body.run()
-	q = body.q
-	if body.reward > maxReward:
-		pol = body.pol
-		maxReward = body.reward
+	pol = body.pol
 
-body = ragdoll(pol = pol, viz = True, arms = arms, playBackSpeed = 1)
+
+body = ragdoll(pol = pol, viz = True, arms = arms, playBackSpeed = 1, eps = 0)
 body.run()
 
 np.save("randomPolicy",pol)

@@ -18,12 +18,12 @@ class ragdoll:
 		#back
 
 	#how I did skrrt
-	q = np.ones([3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2]) #[states, actions, (avg reward, #occurences)]
+	q = np.ones([3,3,3,3,3,5,3,3,3,3,3,3,3,3,3,3,2]) #[states, actions, (avg reward, #occurences)]
 
 	# more memory efficient, needs model of how actions will change agent to next state
 	# q = np.ones([3,3,3,3,3,3,3,3,3,3,3,2]) # [states, (avg reward, occurences)]
 
-	def __init__(self, pol = None, q = q, viz = True, arms = True, playBackSpeed = 1):
+	def __init__(self, pol = None, q = q, viz = True, arms = True, playBackSpeed = 1, eps = 0.1):
 
 		# self.wX = 1600
 		# self.wY = 800
@@ -45,6 +45,8 @@ class ragdoll:
 		self.playBackSpeed = playBackSpeed
 		self.pol = pol
 		self.q = q
+		self.eps = eps
+		self.discountFactor = 0.5
 
 		if self.viz:
 			#init pygame
@@ -183,7 +185,7 @@ class ragdoll:
 		except:
 			pass
 
-		self.history = np.zeros([1,11])
+		self.history = np.zeros([1,16]) #need to keep track of states and actions taken
 		self.history[0,5] = 4 #sim starts with hips at pos 4, all other states 0
 		self.history = self.history.astype(int)
 
@@ -280,42 +282,48 @@ class ragdoll:
 		# 													int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
 		# 													int(self.statevec[10]),0])
 
-		#Right Knee
-		self.rightShin.apply_force_at_local_point((-self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
+
+		
+		rightKneeAction = self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
 															int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
-															int(self.statevec[10]),0]*self.torqueMult,0),(0,0))
-		self.rightShin.apply_force_at_local_point((self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
+															int(self.statevec[10]),0]
+		leftKneeAction = self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
 															int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
-															int(self.statevec[10]),0]*self.torqueMult,0),(0,-30))
-		#Left Knee
-		self.leftShin.apply_force_at_local_point((-self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
+															int(self.statevec[10]),1]
+		rightHipAction = self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
 															int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
-															int(self.statevec[10]),1]*self.torqueMult,0),(0,0))
-		self.leftShin.apply_force_at_local_point((self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
+															int(self.statevec[10]),2]
+		leftHipAction = self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
 															int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
-															int(self.statevec[10]),1]*self.torqueMult,0),(0,-30))
-		#Right Thigh
-		self.rightThigh.apply_force_at_local_point((-self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
+															int(self.statevec[10]),3]
+		backAction = self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
 															int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
-															int(self.statevec[10]),2]*self.torqueMult,0),(0,0))
-		self.rightThigh.apply_force_at_local_point((self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
-															int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
-															int(self.statevec[10]),2]*self.torqueMult,0),(0,-30))
-		#Left Thigh
-		self.leftThigh.apply_force_at_local_point((-self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
-															int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
-															int(self.statevec[10]),3]*self.torqueMult,0),(0,0))
-		self.leftThigh.apply_force_at_local_point((self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
-															int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
-															int(self.statevec[10]),3]*self.torqueMult,0),(0,-30))
-		#back
-		self.back.apply_force_at_local_point((-self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
-															int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
-															int(self.statevec[10]),4]*self.torqueMult,0),(0,0))
-		self.back.apply_force_at_local_point((self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
-															int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
-															int(self.statevec[10]),4]*self.torqueMult,0),(0,-30))
-		pass
+															int(self.statevec[10]),4]
+		#eps chance of random behavior
+		rand = np.random.rand(5)
+		if rand[0] < self.eps:
+			rightKneeAction = np.random.randint(3) - 1
+		if rand[1] < self.eps:
+			leftKneeAction = np.random.randint(3) - 1
+		if rand[2] < self.eps:
+			rightHipAction = np.random.randint(3) - 1
+		if rand[3] < self.eps:
+			leftHipAction = np.random.randint(3) - 1
+		if rand[4] < self.eps:
+			backAction = np.random.randint(3) - 1
+
+		self.rightShin.apply_force_at_local_point((-rightKneeAction*self.torqueMult,0),(0,0))
+		self.rightShin.apply_force_at_local_point((rightKneeAction*self.torqueMult,0),(0,-30))		
+		self.leftShin.apply_force_at_local_point((-leftKneeAction*self.torqueMult,0),(0,0))
+		self.leftShin.apply_force_at_local_point((leftKneeAction*self.torqueMult,0),(0,-30))
+		self.rightThigh.apply_force_at_local_point((-rightHipAction*self.torqueMult,0),(0,0))
+		self.rightThigh.apply_force_at_local_point((rightHipAction*self.torqueMult,0),(0,-30))		
+		self.leftThigh.apply_force_at_local_point((-leftHipAction*self.torqueMult,0),(0,0))
+		self.leftThigh.apply_force_at_local_point((leftHipAction*self.torqueMult,0),(0,-30))
+		self.back.apply_force_at_local_point((-backAction*self.torqueMult,0),(0,0))
+		self.back.apply_force_at_local_point((backAction*self.torqueMult,0),(0,-30))
+		
+		self.actionvec = np.array([rightHipAction,leftKneeAction,rightHipAction,leftHipAction,backAction])
 
 	def calculate_reward(self):
 		'''calculates reward for current trial'''
@@ -323,10 +331,58 @@ class ragdoll:
 		pass
 
 	def update_values(self):
-		'''Updates values of each state after conclusion of trial'''
+		'''Back propogate to update values of each state after conclusion of trial'''
+
+		#sum of discounted rewards
+		G = 0.0
+		#importance sampling ratio
+		W = 1.0
+		t = 0
 		for i in range(np.shape(self.history)[0]):
-			self.pol
-		pass
+			# print(self.history[i])
+			h = self.history[i]
+			# print(h)
+
+			# update reward since step t
+			G = self.discountFactor * G + self.reward
+			# 	#increment count for number of times state has been reached
+			self.q[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
+					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),
+					int(h[12]),int(h[13]),int(h[14]),int(h[15]), 1] += W
+
+			#update weighted average(?)
+			self.q[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
+					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),
+					int(h[12]),int(h[13]),int(h[14]),int(h[15]), 0
+					] = self.q[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
+					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),
+					int(h[12]),int(h[13]),int(h[14]),int(h[15]), 0] + (
+						W / self.q[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
+					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),
+					int(h[12]),int(h[13]),int(h[14]),int(h[15]), 1]) * (
+					G - self.q[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
+					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),
+					int(h[12]),int(h[13]),int(h[14]),int(h[15]), 0])
+
+			#get list of args equal to arg of highest value
+			top = np.argwhere(self.q[int(h[0]), int(h[1]), int(h[2]), int(h[3]), int(h[4]), int(h[5]), int(h[6]), int(h[7]), int(h[8]), int(h[9]), int(h[10]),:,:,:,:,:,0])
+			#break ties at random
+			best = top[np.random.randint(len(top))]
+
+			#set policy to actions of highest reward
+			self.pol[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
+					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]), 0] = best[0]
+			self.pol[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
+					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]), 1] = best[1]
+			self.pol[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
+					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]), 2] = best[2]
+			self.pol[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
+					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]), 3] = best[3]
+			self.pol[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
+					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]), 4] = best[4]
+
+			W = W * (1-self.eps) ** t
+			t += 1
 
 	def initPolicy(self):
 		"""makes initial random policy"""
@@ -348,8 +404,10 @@ class ragdoll:
 			self.get_states()
 			self.activate_joints() #send torque commands to joints as func of states from current policy
 
+			# print(np.append(self.statevec,self.q[12:16]))
 			#record history of current trajectory
-			self.history = np.concatenate((self.history,[self.statevec]),axis = 0)
+
+			self.history = np.concatenate((self.history,[np.append(self.statevec,self.actionvec)]),axis = 0)
 			# print(self.history)
 
 			#upper body or butt has touched ground
