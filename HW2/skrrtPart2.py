@@ -81,7 +81,7 @@ class road:
 		self.test = 0
 		# self.history = np.zeros([1,6])
 		self.history = np.zeros([1,7])
-		self.discountFactor = 0.25
+		self.discountFactor = 0.1
 
 	def draw_map(self):
 

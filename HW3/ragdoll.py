@@ -10,7 +10,7 @@ import numpy as np
 
 class ragdoll:
 
-	torques = np.zeros([5,1])
+	# torques = np.zeros([5,1])
 		#right knee
 		#left knee
 		#right hip
@@ -18,7 +18,7 @@ class ragdoll:
 		#back
 
 	#how I did skrrt
-	q = np.ones([3,3,3,3,3,5,3,3,3,3,3,3,3,3,3,3,2]) #[states, actions, (avg reward, #occurences)]
+	q = 100*np.empty([3,3,5,5,3,5,3,3,3,3,3,3,3,3,3,3,3,3,2]) #[states, actions, (avg reward, #occurences)]
 
 	# more memory efficient, needs model of how actions will change agent to next state
 	# q = np.ones([3,3,3,3,3,3,3,3,3,3,3,2]) # [states, (avg reward, occurences)]
@@ -29,9 +29,9 @@ class ragdoll:
 		# self.wY = 800
 		self.wX = 1600
 		self.wY = 600
-		self.startX = self.wX / 4
+		self.startX = self.wX / 2
 		self.dampingCoeff = 10000
-		self.torqueMult = 50000 #25000
+		self.torqueMult = 5000 #50000
 		self.foreground = (178,102,255,255) #foreground color
 		self.midground = (153,51,255,255) 
 		self.background = (127,0,255,255)
@@ -63,7 +63,7 @@ class ragdoll:
 
 		#init sim space
 		self.space = pymunk.Space()
-		self.space.gravity = (0.0, 900.0)
+		self.space.gravity = (0.0, 70.0) #(0.0,900.0)
 		self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
 		self.draw_options.flags = pymunk.SpaceDebugDrawOptions.DRAW_SHAPES
 
@@ -76,7 +76,7 @@ class ragdoll:
 		        for i in range(4):
 		            segment = pymunk.Segment(self.space.static_body, pts[i], pts[(i+1)%4], d)
 		            segment.elasticity = 1
-		            segment.friction = 1
+		            segment.friction = 10
 		            segment.color = self.sky
 		            self.space.add(segment)
 		Box()
@@ -89,7 +89,7 @@ class ragdoll:
 		self.backMin = -0.25
 		self.backMax = 1
 		#add right leg
-		self.rightShin = self.add_limb(self.space, (self.startX,500), color = self.background, friction = 1)
+		self.rightShin = self.add_limb(self.space, (self.startX,500), color = self.background, friction = 25, mass = 1)
 		self.rightThigh = self.add_limb(self.space, (self.startX,400), thiccness = 15, color = self.background)
 		self.rightKnee = pymunk.PivotJoint(self.rightShin,self.rightThigh,(self.startX,450))
 		self.rightKneeLimits = pymunk.RotaryLimitJoint(self.rightShin,self.rightThigh,self.kneeMin,self.kneeMax)
@@ -98,7 +98,7 @@ class ragdoll:
 		self.space.add(self.rightKneeLimits)
 		self.space.add(self.rightKneeDamp)
 		#add left leg
-		self.leftShin = self.add_limb(self.space, (self.startX,500), color = self.midground, friction = 1)
+		self.leftShin = self.add_limb(self.space, (self.startX,500), color = self.midground, friction = 25, mass = 1)
 		self.leftThigh = self.add_limb(self.space, (self.startX,400), thiccness = 15, color = self.midground)
 		self.leftKnee = pymunk.PivotJoint(self.leftShin,self.leftThigh,(self.startX,450))
 		self.leftKneeLimits = pymunk.RotaryLimitJoint(self.leftShin,self.leftThigh,self.kneeMin,self.kneeMax)
@@ -107,7 +107,8 @@ class ragdoll:
 		self.space.add(self.leftKnee)
 		self.space.add(self.leftKneeLimits)
 		#add butt & hips
-		buttOffset = 10 
+		# buttOffset = 10 
+		buttOffset = 0
 		self.butt = self.add_limb(self.space,(self.startX-buttOffset,320), length = 10, thiccness = 17,color = self.midground, COLLTYPE = 3)
 		self.rightHip = pymunk.PivotJoint(self.rightThigh,self.butt,(self.startX,350))
 		self.rightHipLimits = pymunk.RotaryLimitJoint(self.rightThigh,self.butt,self.hipMin,self.hipMax)
@@ -185,7 +186,7 @@ class ragdoll:
 		except:
 			pass
 
-		self.history = np.zeros([1,16]) #need to keep track of states and actions taken
+		self.history = np.zeros([1,18]) #need to keep track of states and actions taken
 		self.history[0,5] = 4 #sim starts with hips at pos 4, all other states 0
 		self.history = self.history.astype(int)
 
@@ -215,7 +216,7 @@ class ragdoll:
 
 	#init collision callback function
 	def fell_over(self,space, arbiter, x):
-	    print("player fell over at x =", self.back.position[0])
+	    # print("player fell over at x =", self.back.position[0])
 	    # pygame.quit()
 	    self.fallen = True
 	    self.calculate_reward()
@@ -235,36 +236,45 @@ class ragdoll:
 		self.buttHeight = np.floor((self.wY - self.butt.position[1] - 50)/50) #need to translate from pixel value to discrete step
 		if self.buttHeight > 4:
 			self.buttHeight = 4
+
+		if self.butt.angle < -1:
+			self.buttAng = -1
+		if (self.butt.angle > -1) & (self.butt.angle < 1):
+			self.buttAng = 0
+		if self.butt.angle > 1:
+			self.buttAng = 1
+		
 		#get vels
 		self.rkv = self.rightShin.angular_velocity - self.rightThigh.angular_velocity
 		self.lkv = self.leftShin.angular_velocity - self.leftThigh.angular_velocity
 		self.rhv = self.rightThigh.angular_velocity - self.butt.angular_velocity
 		self.lhv = self.leftThigh.angular_velocity - self.butt.angular_velocity
 		self.bv = self.butt.angular_velocity - self.back.angular_velocity
+		self.backv = self.back.angular_velocity
 
 		# print(self.rkv)
 		
-		statevec = np.array([self.rkp,self.lkp,self.rhp,self.lhp,self.bp,self.buttHeight,self.rkv,self.lkv,self.rhv,self.lhv,self.bv])
+		statevec = np.array([self.rkp,self.lkp,self.rhp,self.lhp,self.bp,self.buttHeight,self.buttAng,self.rkv,self.lkv,self.rhv,self.lhv,self.bv,self.backv])
 		# print(statevec[5])
 		#round statevec to nearest incrament
 		statevec[:2] = np.floor(statevec[:2]*self.pStep/(self.kneeMax-self.kneeMin))
-		statevec[2:4] = np.floor(statevec[3:5]*self.pStep/(self.kneeMax-self.kneeMin)) 
-		statevec[4] = np.floor(statevec[4]*self.pStep/(self.kneeMax-self.kneeMin))
+		statevec[2:4] = np.floor(statevec[2:4]*5/(self.hipMax-self.hipMin)) #need 5 discrete steps for hips
+		statevec[4] = np.floor(statevec[4]*self.pStep/(self.backMax-self.backMin))
 		statevec[6:] = np.floor(statevec[6:]*self.vStep/np.pi) # need to make non-negative
 
 		# print(statevec[6])
 
 		#saturate positions outside joint limits
-		for i in range(5):
+		for i in range(3): #was 5
 			if statevec[i] < 0:
 				statevec[i] = 0
 			if statevec[i] > self.pStep - 1:
 				statevec[i] = self.pStep - 1
-		for j in range(5):
-			if statevec[j+6] < 0:
-				statevec[j+6] = 0
-			if statevec[j+6] > self.vStep - 1:
-				statevec[j+6] = self.vStep - 1
+		for j in range(6):
+			if statevec[j+7] < 0:
+				statevec[j+7] = 0
+			if statevec[j+7] > self.vStep - 1:
+				statevec[j+7] = self.vStep - 1
 
 		# print(self.rkp)
 		# statevec = np.floor(statevec[:2]*self.pStep/(self.kneeMax-self.kneeMin))
@@ -286,19 +296,19 @@ class ragdoll:
 		
 		rightKneeAction = self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
 															int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
-															int(self.statevec[10]),0]
+															int(self.statevec[10]),int(self.statevec[11]),int(self.statevec[12]), 0]
 		leftKneeAction = self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
 															int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
-															int(self.statevec[10]),1]
+															int(self.statevec[10]),int(self.statevec[11]),int(self.statevec[12]),1]
 		rightHipAction = self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
 															int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
-															int(self.statevec[10]),2]
+															int(self.statevec[10]),int(self.statevec[11]),int(self.statevec[12]),2]
 		leftHipAction = self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
 															int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
-															int(self.statevec[10]),3]
+															int(self.statevec[10]),int(self.statevec[11]),int(self.statevec[12]),3]
 		backAction = self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
 															int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
-															int(self.statevec[10]),4]
+															int(self.statevec[10]),int(self.statevec[11]),int(self.statevec[12]),4]
 		#eps chance of random behavior
 		rand = np.random.rand(5)
 		if rand[0] < self.eps:
@@ -328,6 +338,16 @@ class ragdoll:
 	def calculate_reward(self):
 		'''calculates reward for current trial'''
 		self.reward = self.back.position[0]
+		# self.reward = 10*self.step + 2*((self.wX / 2) - self.back.position[0])
+		# if self.back.position[0] > (self.wX / 2):
+		# 	# self.reward = self.step
+		# 	self.reward = self.step + self.back.position[0]
+		# else:
+		# 	self.reward = 0
+		# self.reward = self.step
+		if self.buttHeight < 2: #punish trials that end with agent falling over
+			self.reward = 0
+		print(self.reward)
 		pass
 
 	def update_values(self):
@@ -339,47 +359,47 @@ class ragdoll:
 		W = 1.0
 		t = 0
 		for i in range(np.shape(self.history)[0]):
-			# print(self.history[i])
+
 			h = self.history[i]
-			# print(h)
 
 			# update reward since step t
 			G = self.discountFactor * G + self.reward
 			# 	#increment count for number of times state has been reached
 			self.q[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
 					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),
-					int(h[12]),int(h[13]),int(h[14]),int(h[15]), 1] += W
+					int(h[12]),int(h[13]),int(h[14]),int(h[15]),int(h[16]),int(h[17]), 1] += W
 
 			#update weighted average(?)
 			self.q[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
 					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),
-					int(h[12]),int(h[13]),int(h[14]),int(h[15]), 0
+					int(h[12]),int(h[13]),int(h[14]),int(h[15]),int(h[16]), int(h[17]), 0
 					] = self.q[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
 					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),
-					int(h[12]),int(h[13]),int(h[14]),int(h[15]), 0] + (
+					int(h[12]),int(h[13]),int(h[14]),int(h[15]),int(h[16]), int(h[17]), 0] + (
 						W / self.q[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
 					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),
-					int(h[12]),int(h[13]),int(h[14]),int(h[15]), 1]) * (
+					int(h[12]),int(h[13]),int(h[14]),int(h[15]),int(h[16]), int(h[17]), 1]) * (
 					G - self.q[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
 					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),
-					int(h[12]),int(h[13]),int(h[14]),int(h[15]), 0])
+					int(h[12]),int(h[13]),int(h[14]),int(h[15]),int(h[16]), int(h[17]), 0])
 
 			#get list of args equal to arg of highest value
-			top = np.argwhere(self.q[int(h[0]), int(h[1]), int(h[2]), int(h[3]), int(h[4]), int(h[5]), int(h[6]), int(h[7]), int(h[8]), int(h[9]), int(h[10]),:,:,:,:,:,0])
+			top = np.argwhere(self.q[int(h[0]), int(h[1]), int(h[2]), int(h[3]), int(h[4]), int(h[5]), int(h[6]), int(h[7]), int(h[8]), int(h[9]), int(h[10]),int(h[11]),int(h[12]),:,:,:,:,:,0] == np.amax(self.q[int(h[0]), int(h[1]), int(h[2]), int(h[3]), int(h[4]), int(h[5]), int(h[6]), int(h[7]), int(h[8]), int(h[9]), int(h[10]),int(h[11]),int(h[12]),:,:,:,:,:,0]))
 			#break ties at random
 			best = top[np.random.randint(len(top))]
+			# print("best = ", best)
 
 			#set policy to actions of highest reward
 			self.pol[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
-					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]), 0] = best[0]
+					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),int(h[12]), 0] = best[0] -1
 			self.pol[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
-					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]), 1] = best[1]
+					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),int(h[12]), 1] = best[1] - 1
 			self.pol[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
-					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]), 2] = best[2]
+					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),int(h[12]), 2] = best[2] - 1
 			self.pol[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
-					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]), 3] = best[3]
+					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),int(h[12]), 3] = best[3] -1 
 			self.pol[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
-					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]), 4] = best[4]
+					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),int(h[12]), 4] = best[4] - 1
 
 			W = W * (1-self.eps) ** t
 			t += 1
@@ -387,7 +407,7 @@ class ragdoll:
 	def initPolicy(self):
 		"""makes initial random policy"""
 		print("starting new policy")
-		self.pol = np.random.rand(self.pStep, self.pStep, self.pStep, self.pStep, self.pStep, 5, self.vStep, self.vStep, self.vStep, self.vStep, self.vStep, 5)
+		self.pol = np.random.rand(self.pStep, self.pStep, self.pStep, self.pStep, self.pStep, 5,3, self.vStep, self.vStep, self.vStep, self.vStep, self.vStep, self.vStep, 5)
 		# [rkp, lkp, rhp, lhp, bp, rkv, lkv, rhv, lhv, bv, buttHeight, joint actions]
 		# Joint actions: right knee, left knee, right hip, left hip, back
 		self.pol[self.pol < 0.33] = -1
@@ -397,7 +417,7 @@ class ragdoll:
 		# print(self.pol)
 
 	def run(self):
-		step = 0
+		self.step = 0
 		self.fallen = False
 		while self.fallen == False:
 
@@ -407,13 +427,14 @@ class ragdoll:
 			# print(np.append(self.statevec,self.q[12:16]))
 			#record history of current trajectory
 
-			self.history = np.concatenate((self.history,[np.append(self.statevec,self.actionvec)]),axis = 0)
+			# self.history = np.concatenate((self.history,[np.append(self.statevec,self.actionvec)]),axis = 0)
+			self.history = np.concatenate(([np.append(self.statevec,self.actionvec)],self.history),axis = 0)
 			# print(self.history)
 
 			#upper body or butt has touched ground
 			self.h.begin = self.fell_over
 		    #timed out
-			if step > 1000:
+			if self.step > 1000:
 				self.fallen = True
 				self.calculate_reward()
 
@@ -504,7 +525,7 @@ class ragdoll:
 				pygame.display.set_caption("fps: " + str(self.clock.get_fps()))
 
 			self.clock.tick(60*self.playBackSpeed)
-			step += 1
+			self.step += 1
 
 if __name__ == "__main__":
 

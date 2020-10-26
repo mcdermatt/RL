@@ -19,10 +19,10 @@ Map = road(mapFile, mapSize = mapSize, wind = 0)
 # pi = np.load('pi1_v2_no_wind.npy')
 # Map.pi = pi
 
-numRuns = 1024
+numRuns = 256
 run = 0
 vis = False
-eps = 0.2
+eps = 0.25
 
 pic = cv2.imread(mapFile)
 scale_percent = 100 # percent of original size
@@ -102,4 +102,4 @@ for i in best:
 
 plt.pause(10)
 plt.draw()
-plt.savefig("Track_5_SolnV10.png")
+plt.savefig("Track_5_SolnV11.png")

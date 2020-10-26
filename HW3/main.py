@@ -9,13 +9,20 @@ import numpy as np
 		#rather than function of timestep, torques should be function of states
 # read pixels to pong
 # implement Deep RL for second part of experiment
+# add hip angle param
+# fix rounding floor() in get_states()
+# add butt velocity!!!
 
 viz = True
 arms = False
-playBackSpeed = 1 #0.1
-numTrials = 500
+playBackSpeed = 100 #0.1
+numTrials = 5000
+# pol = np.load("randomPolicy2.npy")
 pol = None
 maxReward = 0
+eps = 0.9
+decay = 0.999
+min_epsilon = 0.05
 
 body = ragdoll(viz = viz, arms = arms, playBackSpeed = playBackSpeed)
 body.run()
@@ -24,7 +31,7 @@ q = body.q
 for trial in range(numTrials):
 	print("trial number ", trial)
 	torques = np.random.randn(5,500)
-	body = ragdoll(pol = pol, viz = viz, arms = arms, playBackSpeed = playBackSpeed, eps = 0.1)
+	body = ragdoll(pol = pol, viz = viz, arms = arms, playBackSpeed = playBackSpeed, eps = max(min_epsilon,eps*decay))
 	body.run()
 	pol = body.pol
 
@@ -32,4 +39,4 @@ for trial in range(numTrials):
 body = ragdoll(pol = pol, viz = True, arms = arms, playBackSpeed = 1, eps = 0)
 body.run()
 
-np.save("randomPolicy",pol)
+np.save("randomPolicy3",pol)
