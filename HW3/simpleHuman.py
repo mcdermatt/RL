@@ -18,10 +18,10 @@ dampingCoeff = 10000
 foreground = (178,102,255,255)
 midground = (153,51,255,255)
 background = (127,0,255,255)
-sky = (153,204,255,255)
-floor = (0,51,102,255)
+sky = (32,32,32,255)
+floor = (96,96,96,255)
 
-Arms = False
+Arms = True
 
 #init pygame
 pymunk.pygame_util.positive_y_is_up = False
@@ -41,6 +41,7 @@ mouse_body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
 space = pymunk.Space()
 space.gravity = (0.0, 900.0)
 draw_options = pymunk.pygame_util.DrawOptions(screen)
+draw_options.flags = pymunk.SpaceDebugDrawOptions.DRAW_SHAPES
 
 
 class Box:
