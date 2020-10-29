@@ -21,7 +21,8 @@ background = (127,0,255,255)
 sky = (32,32,32,255)
 floor = (96,96,96,255)
 
-Arms = True
+# Arms = True
+Arms = False
 
 #init pygame
 pymunk.pygame_util.positive_y_is_up = False
