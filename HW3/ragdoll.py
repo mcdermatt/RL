@@ -15,21 +15,9 @@ import numpy as np
 #	-> better simulates ankle action in running
 
 class ragdoll:
+	""" torques (input) = [right knee, left knee, right hip, left hip, back] """
 
-	# torques = np.zeros([5,1])
-		#right knee
-		#left knee
-		#right hip
-		#left hip
-		#back
-
-	#how I did skrrt
-	q = 100*np.empty([3,3,5,5,3,5,3,3,3,3,3,3,3,3,3,3,3,3,2]) #[states, actions, (avg reward, #occurences)]
-
-	# more memory efficient, needs model of how actions will change agent to next state
-	# q = np.ones([3,3,3,3,3,3,3,3,3,3,3,2]) # [states, (avg reward, occurences)]
-
-	def __init__(self, pol = None, q = q, viz = True, arms = True, playBackSpeed = 1, eps = 0.1):
+	def __init__(self, viz = True, arms = True, playBackSpeed = 1, eps = 0.1):
 
 		# self.wX = 1600
 		# self.wY = 800
@@ -37,7 +25,7 @@ class ragdoll:
 		self.wY = 600
 		self.startX = self.wX / 2
 		self.dampingCoeff = 10000
-		self.torqueMult = 5000 #50000
+		self.torqueMult = 50000 #50000
 		self.foreground = (178,102,255,255) #foreground color
 		self.midground = (153,51,255,255) 
 		self.background = (127,0,255,255)
@@ -49,8 +37,6 @@ class ragdoll:
 		self.clock = pygame.time.Clock()
 		self.viz = viz
 		self.playBackSpeed = playBackSpeed
-		self.pol = pol
-		self.q = q
 		self.eps = eps
 		self.discountFactor = 0.5
 
@@ -69,12 +55,12 @@ class ragdoll:
 
 		#init sim space
 		self.space = pymunk.Space()
-		self.space.gravity = (0.0, 70.0) #(0.0,900.0)
+		self.space.gravity = (0.0, 800.0) #(0.0,900.0)
 		self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
 		self.draw_options.flags = pymunk.SpaceDebugDrawOptions.DRAW_SHAPES
 
 
-		class Box: #stolen from stack overflow
+		class Box:
 		    def __init__(ragdoll, p0=(10, 10), p1=(self.wX-10,self.wY-50), d=2):
 		        x0, y0 = p0
 		        x1, y1 = p1
@@ -113,8 +99,8 @@ class ragdoll:
 		self.space.add(self.leftKnee)
 		self.space.add(self.leftKneeLimits)
 		#add butt & hips
-		# buttOffset = 10 
-		buttOffset = 0
+		buttOffset = 10 
+		# buttOffset = 0
 		self.butt = self.add_limb(self.space,(self.startX-buttOffset,320), length = 10, thiccness = 17,color = self.midground, COLLTYPE = 3)
 		self.rightHip = pymunk.PivotJoint(self.rightThigh,self.butt,(self.startX,350))
 		self.rightHipLimits = pymunk.RotaryLimitJoint(self.rightThigh,self.butt,self.hipMin,self.hipMax)
@@ -186,11 +172,6 @@ class ragdoll:
 
 		self.pStep = 3
 		self.vStep = 3
-		try:
-			if pol == None:
-				self.initPolicy()
-		except:
-			pass
 
 		self.history = np.zeros([1,18]) #need to keep track of states and actions taken
 		self.history[0,5] = 4 #sim starts with hips at pos 4, all other states 0
@@ -226,7 +207,7 @@ class ragdoll:
 	    # pygame.quit()
 	    self.fallen = True
 	    self.calculate_reward()
-	    self.update_values()
+	    # self.update_values()
 	    return True
 
 	def get_states(self):
@@ -290,8 +271,8 @@ class ragdoll:
 		self.statevec = statevec.astype(int)
 		# self.statevec = [self.statevec]
 
-	def activate_joints(self):
-		"""applys torques to joints according to state vector and current policy"""
+	def activate_joints(self, rightKneeAction, leftKneeAction, rightHipAction, leftHipAction, backAction):
+		"""applys torques to joints according to input values"""
 
 		# print(self.statevec)
 		# print(self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
@@ -300,33 +281,33 @@ class ragdoll:
 
 
 		
-		rightKneeAction = self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
-															int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
-															int(self.statevec[10]),int(self.statevec[11]),int(self.statevec[12]), 0]
-		leftKneeAction = self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
-															int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
-															int(self.statevec[10]),int(self.statevec[11]),int(self.statevec[12]),1]
-		rightHipAction = self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
-															int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
-															int(self.statevec[10]),int(self.statevec[11]),int(self.statevec[12]),2]
-		leftHipAction = self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
-															int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
-															int(self.statevec[10]),int(self.statevec[11]),int(self.statevec[12]),3]
-		backAction = self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
-															int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
-															int(self.statevec[10]),int(self.statevec[11]),int(self.statevec[12]),4]
+		# rightKneeAction = self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
+		# 													int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
+		# 													int(self.statevec[10]),int(self.statevec[11]),int(self.statevec[12]), 0]
+		# leftKneeAction = self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
+		# 													int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
+		# 													int(self.statevec[10]),int(self.statevec[11]),int(self.statevec[12]),1]
+		# rightHipAction = self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
+		# 													int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
+		# 													int(self.statevec[10]),int(self.statevec[11]),int(self.statevec[12]),2]
+		# leftHipAction = self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
+		# 													int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
+		# 													int(self.statevec[10]),int(self.statevec[11]),int(self.statevec[12]),3]
+		# backAction = self.pol[int(self.statevec[0]), int(self.statevec[1]), int(self.statevec[2]), int(self.statevec[3]), int(self.statevec[4]), 
+		# 													int(self.statevec[5]), int(self.statevec[6]), int(self.statevec[7]), int(self.statevec[8]), int(self.statevec[9]), 
+		# 													int(self.statevec[10]),int(self.statevec[11]),int(self.statevec[12]),4]
 		#eps chance of random behavior
-		rand = np.random.rand(5)
-		if rand[0] < self.eps:
-			rightKneeAction = np.random.randint(3) - 1
-		if rand[1] < self.eps:
-			leftKneeAction = np.random.randint(3) - 1
-		if rand[2] < self.eps:
-			rightHipAction = np.random.randint(3) - 1
-		if rand[3] < self.eps:
-			leftHipAction = np.random.randint(3) - 1
-		if rand[4] < self.eps:
-			backAction = np.random.randint(3) - 1
+		# rand = np.random.rand(5)
+		# if rand[0] < self.eps:
+		# 	rightKneeAction = np.random.randint(3) - 1
+		# if rand[1] < self.eps:
+		# 	leftKneeAction = np.random.randint(3) - 1
+		# if rand[2] < self.eps:
+		# 	rightHipAction = np.random.randint(3) - 1
+		# if rand[3] < self.eps:
+		# 	leftHipAction = np.random.randint(3) - 1
+		# if rand[4] < self.eps:
+		# 	backAction = np.random.randint(3) - 1
 
 		self.rightShin.apply_force_at_local_point((-rightKneeAction*self.torqueMult,0),(0,0))
 		self.rightShin.apply_force_at_local_point((rightKneeAction*self.torqueMult,0),(0,-30))		
@@ -356,85 +337,107 @@ class ragdoll:
 		print(self.reward)
 		pass
 
-	def update_values(self):
-		'''Back propogate to update values of each state after conclusion of trial'''
+	# def update_values(self):
+	# 	'''Back update values of each state after conclusion of trial'''
 
-		#sum of discounted rewards
-		G = 0.0
-		#importance sampling ratio
-		W = 1.0
-		t = 0
-		for i in range(np.shape(self.history)[0]):
+	# 	#sum of discounted rewards
+	# 	G = 0.0
+	# 	#importance sampling ratio
+	# 	W = 1.0
+	# 	t = 0
+	# 	for i in range(np.shape(self.history)[0]):
 
-			h = self.history[i]
+	# 		h = self.history[i]
 
-			# update reward since step t
-			G = self.discountFactor * G + self.reward
-			# 	#increment count for number of times state has been reached
-			self.q[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
-					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),
-					int(h[12]),int(h[13]),int(h[14]),int(h[15]),int(h[16]),int(h[17]), 1] += W
+	# 		# update reward since step t
+	# 		G = self.discountFactor * G + self.reward
+	# 		# 	#increment count for number of times state has been reached
+	# 		self.q[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
+	# 				int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),
+	# 				int(h[12]),int(h[13]),int(h[14]),int(h[15]),int(h[16]),int(h[17]), 1] += W
 
-			#update weighted average(?)
-			self.q[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
-					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),
-					int(h[12]),int(h[13]),int(h[14]),int(h[15]),int(h[16]), int(h[17]), 0
-					] = self.q[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
-					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),
-					int(h[12]),int(h[13]),int(h[14]),int(h[15]),int(h[16]), int(h[17]), 0] + (
-						W / self.q[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
-					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),
-					int(h[12]),int(h[13]),int(h[14]),int(h[15]),int(h[16]), int(h[17]), 1]) * (
-					G - self.q[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
-					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),
-					int(h[12]),int(h[13]),int(h[14]),int(h[15]),int(h[16]), int(h[17]), 0])
+	# 		#update weighted average(?)
+	# 		self.q[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
+	# 				int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),
+	# 				int(h[12]),int(h[13]),int(h[14]),int(h[15]),int(h[16]), int(h[17]), 0
+	# 				] = self.q[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
+	# 				int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),
+	# 				int(h[12]),int(h[13]),int(h[14]),int(h[15]),int(h[16]), int(h[17]), 0] + (
+	# 					W / self.q[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
+	# 				int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),
+	# 				int(h[12]),int(h[13]),int(h[14]),int(h[15]),int(h[16]), int(h[17]), 1]) * (
+	# 				G - self.q[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
+	# 				int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),
+	# 				int(h[12]),int(h[13]),int(h[14]),int(h[15]),int(h[16]), int(h[17]), 0])
 
-			#get list of args equal to arg of highest value
-			top = np.argwhere(self.q[int(h[0]), int(h[1]), int(h[2]), int(h[3]), int(h[4]), int(h[5]), int(h[6]), int(h[7]), int(h[8]), int(h[9]), int(h[10]),int(h[11]),int(h[12]),:,:,:,:,:,0] == np.amax(self.q[int(h[0]), int(h[1]), int(h[2]), int(h[3]), int(h[4]), int(h[5]), int(h[6]), int(h[7]), int(h[8]), int(h[9]), int(h[10]),int(h[11]),int(h[12]),:,:,:,:,:,0]))
-			#break ties at random
-			best = top[np.random.randint(len(top))]
-			# print("best = ", best)
+	# 		#get list of args equal to arg of highest value
+	# 		top = np.argwhere(self.q[int(h[0]), int(h[1]), int(h[2]), int(h[3]), int(h[4]), int(h[5]), int(h[6]), int(h[7]), int(h[8]), int(h[9]), int(h[10]),int(h[11]),int(h[12]),:,:,:,:,:,0] == np.amax(self.q[int(h[0]), int(h[1]), int(h[2]), int(h[3]), int(h[4]), int(h[5]), int(h[6]), int(h[7]), int(h[8]), int(h[9]), int(h[10]),int(h[11]),int(h[12]),:,:,:,:,:,0]))
+	# 		#break ties at random
+	# 		best = top[np.random.randint(len(top))]
+	# 		# print("best = ", best)
 
-			#set policy to actions of highest reward
-			self.pol[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
-					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),int(h[12]), 0] = best[0] -1
-			self.pol[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
-					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),int(h[12]), 1] = best[1] - 1
-			self.pol[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
-					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),int(h[12]), 2] = best[2] - 1
-			self.pol[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
-					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),int(h[12]), 3] = best[3] -1 
-			self.pol[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
-					int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),int(h[12]), 4] = best[4] - 1
+	# 		#set policy to actions of highest reward
+	# 		self.pol[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
+	# 				int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),int(h[12]), 0] = best[0] -1
+	# 		self.pol[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
+	# 				int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),int(h[12]), 1] = best[1] - 1
+	# 		self.pol[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
+	# 				int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),int(h[12]), 2] = best[2] - 1
+	# 		self.pol[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
+	# 				int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),int(h[12]), 3] = best[3] -1 
+	# 		self.pol[int(h[0]),int(h[1]),int(h[2]),int(h[3]),int(h[4]),int(h[5]),
+	# 				int(h[6]),int(h[7]),int(h[8]),int(h[9]),int(h[10]),int(h[11]),int(h[12]), 4] = best[4] - 1
 
-			W = W * (1-self.eps) ** t
-			t += 1
+	# 		W = W * (1-self.eps) ** t
+	# 		t += 1
 
-	def initPolicy(self):
-		"""makes initial random policy"""
-		print("starting new policy")
-		self.pol = np.random.rand(self.pStep, self.pStep, self.pStep, self.pStep, self.pStep, 5,3, self.vStep, self.vStep, self.vStep, self.vStep, self.vStep, self.vStep, 5)
-		# [rkp, lkp, rhp, lhp, bp, rkv, lkv, rhv, lhv, bv, buttHeight, joint actions]
-		# Joint actions: right knee, left knee, right hip, left hip, back
-		self.pol[self.pol < 0.33] = -1
-		self.pol[(self.pol < 0.66) & (self.pol > 0.33)] = 0
-		self.pol[self.pol > 0.66] = 1
+	# def initPolicy(self):
+	# 	"""makes initial random policy"""
+	# 	print("starting new policy")
+	# 	self.pol = np.random.rand(self.pStep, self.pStep, self.pStep, self.pStep, self.pStep, 5,3, self.vStep, self.vStep, self.vStep, self.vStep, self.vStep, self.vStep, 5)
+	# 	# [rkp, lkp, rhp, lhp, bp, rkv, lkv, rhv, lhv, bv, buttHeight, joint actions]
+	# 	# Joint actions: right knee, left knee, right hip, left hip, back
+	# 	self.pol[self.pol < 0.33] = -1
+	# 	self.pol[(self.pol < 0.66) & (self.pol > 0.33)] = 0
+	# 	self.pol[self.pol > 0.66] = 1
 
-		# print(self.pol)
+	# 	# print(self.pol)
+
+
+	def tick(self):
+		"""simulates one timestep"""
+
+		for event in pygame.event.get():
+			    if event.type == QUIT:
+			        exit()
+
+		if self.viz:
+			self.screen.fill(self.sky)
+
+		self.space.step(1./60)
+		self.space.debug_draw(self.draw_options)
+
+		if self.viz:	
+			pygame.display.flip()
+			pygame.display.set_caption("fps: " + str(self.clock.get_fps()))
+		
+		self.clock.tick(60*self.playBackSpeed)
 
 	def run(self):
+		"""runs simulation for numerous timesteps, not used in training"""
+		
 		self.step = 0
 		self.fallen = False
 		while self.fallen == False:
 
 			self.get_states()
-			self.activate_joints() #send torque commands to joints as func of states from current policy
+			# self.activate_joints(1,1,1,1,1) #send torque commands to joints as func of states from current policy
 
 			# print(np.append(self.statevec,self.q[12:16]))
 			#record history of current trajectory
 
 			# self.history = np.concatenate((self.history,[np.append(self.statevec,self.actionvec)]),axis = 0)
-			self.history = np.concatenate(([np.append(self.statevec,self.actionvec)],self.history),axis = 0)
+			# self.history = np.concatenate(([np.append(self.statevec,self.actionvec)],self.history),axis = 0)
 			# print(self.history)
 
 			#upper body or butt has touched ground
@@ -535,5 +538,12 @@ class ragdoll:
 
 if __name__ == "__main__":
 
-	body = ragdoll(viz = True, arms = False)
-	body.run()
+	Epochs = 30
+
+	for epoch in range(Epochs):
+		print("Epoch # ", epoch)
+		body = ragdoll(viz = True, arms = False, playBackSpeed = 10)
+		# body.run()
+		for i in range(100):
+			body.activate_joints(np.random.rand()-0.5,np.random.rand()-0.5,np.random.rand()-0.5,np.random.rand()-0.5,np.random.rand()-0.5)
+			body.tick()

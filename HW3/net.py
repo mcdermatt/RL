@@ -7,11 +7,9 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 #TODO
-# Figure out optimal number of layers
 # Figure out how to deal with multiple outputs
 # Figure out how to deal with continuous outputs
-# Decide on inputs
-# actor-critic network??
+# Take in input size from ragdoll model so we can add arms later
 
 class Net(nn.Module): #create net and inherit from nn.Module
 	def __init__(self):

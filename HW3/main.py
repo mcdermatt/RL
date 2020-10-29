@@ -21,34 +21,55 @@ else:
 	print("Running on the CPU")
 torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
-# device = torch.device("cpu")
-
 net = Net()
 net = net.to(device)
 
 #x is the input (states of robot joints)
-# x = torch.rand(18)
 x = Variable(torch.rand(18),requires_grad = False)
 net.forward(x.view(-1,18))
 
 print("x = ",x)
 #first weight
-print("w1 = ", net.fc1.weight.data )
+# print("w1 = ", net.fc1.weight.data )
 
-#testing how long it takes to run through net to get output given input
-start = time.time()
-for i in range(10):
-	x = torch.rand(18)
-	x = x.to(device)
-	net.zero_grad()
+Epochs = 10 #repeat simulation Epoch times
+learning_rate = 0.001
+for epoch in range(Epochs):
+	# simulate one timestep 
+	while body.fallen == False:
+		
+		# feed states into NN and get out torques as per current weights
 
-	y = net.forward(x.view(-1,18))
-	# print(y)
-	# print(y.grad)
+		#feed torques into simulation and step forward one timestep
 
-stop = time.time()
-print("it took ", stop-start," seconds to run")
-#took ~2.59s on GPU for 10000 trials
+		#update visualization
+	
+	#get reward heuristic
 
-# for param in net.parameters():
-# 	print(param.data)
+	#calculate loss
+
+	#zero grads
+
+	#backward pass
+
+	#update weights	
+
+	
+	#update learning rate???
+
+
+
+# #testing how long it takes to run through net to get output given input
+# start = time.time()
+# for i in range(10):
+# 	x = torch.rand(18)
+# 	x = x.to(device)
+# 	net.zero_grad()
+
+# 	y = net.forward(x.view(-1,18))
+# 	# print(y)
+# 	# print(y.grad)
+
+# stop = time.time()
+# print("it took ", stop-start," seconds to run")
+# #took ~2.59s on GPU for 10000 trials
