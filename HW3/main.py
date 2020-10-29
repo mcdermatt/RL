@@ -1,42 +1,54 @@
-from ragdoll import ragdoll
-import numpy as np
+from net import Net
+import torch
+from torch.autograd import Variable
+import torch.nn.functional as F
+import torch.nn as nn
+import torch.optim as optim
+import time
 
-#TODO:
-# check for clipping through ground plane
-# figure out what states to consider for policy
-# Reward Shaping- figure out best way(?)
-# change torques input to policy input
-		#rather than function of timestep, torques should be function of states
-# read pixels to pong
-# implement Deep RL for second part of experiment
-# add hip angle param
-# fix rounding floor() in get_states()
-# add butt velocity!!!
+#TODO 
+#	figure out loss function
+#	integrate stepping with ragdoll class
+#	standardize inputs and outputs
 
-viz = True
-arms = False
-playBackSpeed = 100 #0.1
-numTrials = 5000
-# pol = np.load("randomPolicy2.npy")
-pol = None
-maxReward = 0
-eps = 0.9
-decay = 0.999
-min_epsilon = 0.05
+if torch.cuda.is_available():
+	device = torch.device("cuda:0")  # you can continue going on here, like cuda:1 cuda:2....etc.
+	torch.set_default_tensor_type('torch.cuda.FloatTensor') 
+	print("Running on GPU")
+else:
+	device = torch.device("cpu")
+	torch.set_default_tensor_type('torch.FloatTensor')
+	print("Running on the CPU")
+torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
-body = ragdoll(viz = viz, arms = arms, playBackSpeed = playBackSpeed)
-body.run()
-q = body.q
+# device = torch.device("cpu")
 
-for trial in range(numTrials):
-	print("trial number ", trial)
-	torques = np.random.randn(5,500)
-	body = ragdoll(pol = pol, viz = viz, arms = arms, playBackSpeed = playBackSpeed, eps = max(min_epsilon,eps*decay))
-	body.run()
-	pol = body.pol
+net = Net()
+net = net.to(device)
 
+#x is the input (states of robot joints)
+# x = torch.rand(18)
+x = Variable(torch.rand(18),requires_grad = False)
+net.forward(x.view(-1,18))
 
-body = ragdoll(pol = pol, viz = True, arms = arms, playBackSpeed = 1, eps = 0)
-body.run()
+print("x = ",x)
+#first weight
+print("w1 = ", net.fc1.weight.data )
 
-np.save("randomPolicy3",pol)
+#testing how long it takes to run through net to get output given input
+start = time.time()
+for i in range(10):
+	x = torch.rand(18)
+	x = x.to(device)
+	net.zero_grad()
+
+	y = net.forward(x.view(-1,18))
+	# print(y)
+	# print(y.grad)
+
+stop = time.time()
+print("it took ", stop-start," seconds to run")
+#took ~2.59s on GPU for 10000 trials
+
+# for param in net.parameters():
+# 	print(param.data)

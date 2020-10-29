@@ -8,12 +8,6 @@ import pickle
 import pygame
 import numpy as np
 
-#TODO
-# make step function
-# make ins and outs similar to gym enviornments
-# increase elasticity of collisions between feet and ground 
-#	-> better simulates ankle action in running
-
 class ragdoll:
 
 	# torques = np.zeros([5,1])
