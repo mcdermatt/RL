@@ -7,6 +7,10 @@ from pygame.locals import *
 import pickle
 import pygame
 import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.autograd import Variable
 
 #TODO
 # make step function
@@ -17,7 +21,7 @@ import numpy as np
 class ragdoll:
 	""" torques (input) = [right knee, left knee, right hip, left hip, back] """
 
-	def __init__(self, viz = True, arms = True, playBackSpeed = 1, eps = 0.1):
+	def __init__(self, viz = True, arms = True, playBackSpeed = 1):
 
 		# self.wX = 1600
 		# self.wY = 800
@@ -25,7 +29,7 @@ class ragdoll:
 		self.wY = 600
 		self.startX = self.wX / 2
 		self.dampingCoeff = 10000
-		self.torqueMult = 50000 #50000
+		self.torqueMult = 25000 #50000
 		self.foreground = (178,102,255,255) #foreground color
 		self.midground = (153,51,255,255) 
 		self.background = (127,0,255,255)
@@ -37,7 +41,7 @@ class ragdoll:
 		self.clock = pygame.time.Clock()
 		self.viz = viz
 		self.playBackSpeed = playBackSpeed
-		self.eps = eps
+		# self.eps = eps
 		self.discountFactor = 0.5
 
 		if self.viz:
@@ -55,7 +59,7 @@ class ragdoll:
 
 		#init sim space
 		self.space = pymunk.Space()
-		self.space.gravity = (0.0, 800.0) #(0.0,900.0)
+		self.space.gravity = (0.0, 900.0) #(0.0,900.0)
 		self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
 		self.draw_options.flags = pymunk.SpaceDebugDrawOptions.DRAW_SHAPES
 
@@ -221,15 +225,15 @@ class ragdoll:
 		self.bp = self.back.angle - self.butt.angle 
 		#get height of butt off of ground
 		self.buttHeight = np.floor((self.wY - self.butt.position[1] - 50)/50) #need to translate from pixel value to discrete step
-		if self.buttHeight > 4:
-			self.buttHeight = 4
+		# if self.buttHeight > 4:
+		# 	self.buttHeight = 4
 
-		if self.butt.angle < -1:
-			self.buttAng = -1
-		if (self.butt.angle > -1) & (self.butt.angle < 1):
-			self.buttAng = 0
-		if self.butt.angle > 1:
-			self.buttAng = 1
+		# if self.butt.angle < -1:
+		# 	self.buttAng = -1
+		# if (self.butt.angle > -1) & (self.butt.angle < 1):
+		# 	self.buttAng = 0
+		# if self.butt.angle > 1:
+		# 	self.buttAng = 1
 		
 		#get vels
 		self.rkv = self.rightShin.angular_velocity - self.rightThigh.angular_velocity
@@ -239,38 +243,37 @@ class ragdoll:
 		self.bv = self.butt.angular_velocity - self.back.angular_velocity
 		self.backv = self.back.angular_velocity
 
-		# print(self.rkv)
+		#should probably clean this up a bit...
+		statevec = np.array([self.rkp,self.lkp,self.rhp,self.lhp,self.bp,self.butt.position[1],self.butt.angle,self.rkv,self.lkv,self.rhv,self.lhv,self.bv,self.backv])
 		
-		statevec = np.array([self.rkp,self.lkp,self.rhp,self.lhp,self.bp,self.buttHeight,self.buttAng,self.rkv,self.lkv,self.rhv,self.lhv,self.bv,self.backv])
-		# print(statevec[5])
-		#round statevec to nearest incrament
-		statevec[:2] = np.floor(statevec[:2]*self.pStep/(self.kneeMax-self.kneeMin))
-		statevec[2:4] = np.floor(statevec[2:4]*5/(self.hipMax-self.hipMin)) #need 5 discrete steps for hips
-		statevec[4] = np.floor(statevec[4]*self.pStep/(self.backMax-self.backMin))
-		statevec[6:] = np.floor(statevec[6:]*self.vStep/np.pi) # need to make non-negative
+		# # print(statevec[5])
+		# #round statevec to nearest incrament
+		# statevec[:2] = np.floor(statevec[:2]*self.pStep/(self.kneeMax-self.kneeMin))
+		# statevec[2:4] = np.floor(statevec[2:4]*5/(self.hipMax-self.hipMin)) #need 5 discrete steps for hips
+		# statevec[4] = np.floor(statevec[4]*self.pStep/(self.backMax-self.backMin))
+		# statevec[6:] = np.floor(statevec[6:]*self.vStep/np.pi) # need to make non-negative
 
-		# print(statevec[6])
+		# # print(statevec[6])
 
-		#saturate positions outside joint limits
-		for i in range(3): #was 5
-			if statevec[i] < 0:
-				statevec[i] = 0
-			if statevec[i] > self.pStep - 1:
-				statevec[i] = self.pStep - 1
-		for j in range(6):
-			if statevec[j+7] < 0:
-				statevec[j+7] = 0
-			if statevec[j+7] > self.vStep - 1:
-				statevec[j+7] = self.vStep - 1
+		# #saturate positions outside joint limits
+		# for i in range(3): #was 5
+		# 	if statevec[i] < 0:
+		# 		statevec[i] = 0
+		# 	if statevec[i] > self.pStep - 1:
+		# 		statevec[i] = self.pStep - 1
+		# for j in range(6):
+		# 	if statevec[j+7] < 0:
+		# 		statevec[j+7] = 0
+		# 	if statevec[j+7] > self.vStep - 1:
+		# 		statevec[j+7] = self.vStep - 1
 
-		# print(self.rkp)
-		# statevec = np.floor(statevec[:2]*self.pStep/(self.kneeMax-self.kneeMin))
+		# self.statevec = statevec.astype(float)
+		# print("sv = ",statevec)
+		self.statevec = torch.from_numpy(statevec) #??
+		# print("sv = ", self.statevec)
+
+		return(self.statevec.float())
 		
-		# print(statevec)
-		# return statevec
-		self.statevec = statevec.astype(int)
-		# self.statevec = [self.statevec]
-
 	def activate_joints(self, rightKneeAction, leftKneeAction, rightHipAction, leftHipAction, backAction):
 		"""applys torques to joints according to input values"""
 
@@ -406,6 +409,9 @@ class ragdoll:
 
 	def tick(self):
 		"""simulates one timestep"""
+
+		#upper body or butt has touched ground
+		self.h.begin = self.fell_over
 
 		for event in pygame.event.get():
 			    if event.type == QUIT:

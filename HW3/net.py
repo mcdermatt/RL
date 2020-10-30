@@ -16,7 +16,7 @@ class Net(nn.Module): #create net and inherit from nn.Module
 		super().__init__() #need to run this because init func of nn.Module is not run upon inherit
 
 		#Linear is a simple flat fuly connected
-		self.fc1 = nn.Linear(18, 64) #input current 18 states
+		self.fc1 = nn.Linear(13, 64) #input current 18 states
 		self.fc2 = nn.Linear(64, 64)  #arbitrarily choosing 64 nodes for hidden layer
 		self.fc3 = nn.Linear(64, 5)  #output 5 torque values
 
