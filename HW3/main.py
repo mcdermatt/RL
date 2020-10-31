@@ -1,4 +1,4 @@
-from net import Net
+from model import Actor
 from ragdoll import ragdoll
 import torch
 from torch.autograd import Variable
@@ -8,9 +8,11 @@ import torch.optim as optim
 import time
 
 #TODO 
+#	Convert Net() to actor critic network - this will handle issues of calculating loss
+#	allow script to run with viz = False
 #	figure out loss function
-#	integrate stepping with ragdoll class
 #	standardize inputs and outputs
+#	stop human from getting stuck in a split
 
 if torch.cuda.is_available():
 	device = torch.device("cuda:0")  # you can continue going on here, like cuda:1 cuda:2....etc.
@@ -22,22 +24,24 @@ else:
 	print("Running on the CPU")
 torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
-net = Net()
+net = Actor()
 net = net.to(device)
+
+optimizer = optim.Adam(net.parameters(), lr = 0.001) #net.parmeters controls what stuff in net() is adjusted (default is everything)
 
 #x is the input (states of robot joints)
 input = Variable(torch.rand(13),requires_grad = False)
 # y = net.forward(x.view(-1,18))
 
-print("input = ",input)
+# print("input = ",input)
 #first weight
 # print("w1 = ", net.fc1.weight.data )
 
-Epochs = 10 #repeat simulation Epoch times
+trials = 10 #repeat simulation Epoch times
 learning_rate = 0.001
-for epoch in range(Epochs):
+for trial in range(trials):
 
-	print("Epoch # ", epoch)
+	print("trial # ", trial)
 
 	body = ragdoll(viz = True, arms = True, playBackSpeed = 1)
 	body.tick() #tick once to randomize starting states slightly
@@ -66,15 +70,21 @@ for epoch in range(Epochs):
 		body.tick()
 
 	#get reward heuristic
-
-	#calculate loss - account for energy expended(?)
-
+	reward = body.reward
 	#zero grads
+	net.zero_grad()
+
+	#calculate loss - account for energy expended(?)	
+	# temp = torch.Tensor()
+	# loss = F.nll_loss(output,temp)
+
+	# print("loss = ", loss)
 
 	#backward pass
+	# loss.backward()
 
 	#update weights	
-
+	optimizer.step()
 	
 	#update learning rate???
 

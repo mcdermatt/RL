@@ -12,11 +12,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 
+from replayBuffer import ReplayBuffer
+
 #TODO
-# make step function
-# make ins and outs similar to gym enviornments
+# make step function work with viz = False
+# standardize ins and outs similar to gym enviornments
 # increase elasticity of collisions between feet and ground 
 #	-> better simulates ankle action in running
+# create ReplayBuffer class to store history
 
 class ragdoll:
 	""" torques (input) = [right knee, left knee, right hip, left hip, back] """
@@ -29,7 +32,7 @@ class ragdoll:
 		self.wY = 600
 		self.startX = self.wX / 2
 		self.dampingCoeff = 10000
-		self.torqueMult = 25000 #50000
+		self.torqueMult = 15000 #50000
 		self.foreground = (178,102,255,255) #foreground color
 		self.midground = (153,51,255,255) 
 		self.background = (127,0,255,255)
@@ -59,9 +62,11 @@ class ragdoll:
 
 		#init sim space
 		self.space = pymunk.Space()
-		self.space.gravity = (0.0, 900.0) #(0.0,900.0)
+		self.space.gravity = (0.0, 1200.0) #(0.0,900.0)
 		self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
 		self.draw_options.flags = pymunk.SpaceDebugDrawOptions.DRAW_SHAPES
+		self.step = 0
+
 
 
 		class Box:
@@ -177,9 +182,12 @@ class ragdoll:
 		self.pStep = 3
 		self.vStep = 3
 
-		self.history = np.zeros([1,18]) #need to keep track of states and actions taken
-		self.history[0,5] = 4 #sim starts with hips at pos 4, all other states 0
-		self.history = self.history.astype(int)
+		#change history to replay buffer object
+		self.history = ReplayBuffer(action_size = 5, buffer_size = 10000, batch_size = 100, seed = 1)
+
+		# self.history = np.zeros([1,18]) #need to keep track of states and actions taken
+		# self.history[0,5] = 4 #sim starts with hips at pos 4, all other states 0
+		# self.history = self.history.astype(int)
 
 
 	def add_limb(self,space,pos,length = 30, mass = 2, thiccness = 10, color = (100,100,100,255), COLLTYPE = 1, friction = 0.7):#filter = 0b100):
@@ -216,6 +224,8 @@ class ragdoll:
 
 	def get_states(self):
 		"""gets positions and velocities of each joint in Rad and Rad/s (Rounded to nearest pstep/ vstep incrament)"""
+
+		# print("Back velocity = ", self.back.velocity[1])
 
 		#get positions/ angles
 		self.rkp = self.rightShin.angle - self.rightThigh.angle
@@ -327,18 +337,10 @@ class ragdoll:
 
 	def calculate_reward(self):
 		'''calculates reward for current trial'''
-		self.reward = self.back.position[0]
-		# self.reward = 10*self.step + 2*((self.wX / 2) - self.back.position[0])
-		# if self.back.position[0] > (self.wX / 2):
-		# 	# self.reward = self.step
-		# 	self.reward = self.step + self.back.position[0]
-		# else:
-		# 	self.reward = 0
-		# self.reward = self.step
-		if self.buttHeight < 2: #punish trials that end with agent falling over
-			self.reward = 0
-		print(self.reward)
-		pass
+		self.reward = self.back.velocity[0] + self.step*0.01 + self.back.position[0]
+		
+		# print(self.reward)
+		return(self.reward)
 
 	# def update_values(self):
 	# 	'''Back update values of each state after conclusion of trial'''
@@ -428,11 +430,11 @@ class ragdoll:
 			pygame.display.set_caption("fps: " + str(self.clock.get_fps()))
 		
 		self.clock.tick(60*self.playBackSpeed)
+		self.step += 1
 
 	def run(self):
 		"""runs simulation for numerous timesteps, not used in training"""
 		
-		self.step = 0
 		self.fallen = False
 		while self.fallen == False:
 
