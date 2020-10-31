@@ -29,11 +29,11 @@ device = torch.device("cpu")
 #init agent (state size, action size)
 agent = Agent(13,5)
 
-trials = 10 #repeat simulation Epoch times
+trials = 1000 #repeat simulation Epoch times
 learning_rate = 0.001
 for trial in range(trials):
 	#resets simulation
-	body = ragdoll(viz = True, arms = True, playBackSpeed = 1)
+	body = ragdoll(viz = True, arms = False, playBackSpeed = 10)
 
 	while body.fallen == False:
 		#get states of ragdoll

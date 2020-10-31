@@ -20,6 +20,8 @@ class Actor(nn.Module): #create actor class and inherit from nn.Module
 		self.fc2 = nn.Linear(64, 64)  #arbitrarily choosing 64 nodes for hidden layer (probably too small)
 		self.fc3 = nn.Linear(64, action_size)  #output 5 torque values
 
+		self.m = nn.Sigmoid()
+
 	def forward(self, state):
     	#F.relu is rectified linear activation func
     	#   activation func is sigmoid- keeps output from exploding
@@ -34,7 +36,7 @@ class Actor(nn.Module): #create actor class and inherit from nn.Module
 
     	#look into nn.BatchNorm1d()
 
-		return(x)
+		return(self.m(x))
 		# return F.log_softmax(x, dim = 1)
 
 class Critic(nn.Module):

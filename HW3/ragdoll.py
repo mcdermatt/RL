@@ -30,11 +30,11 @@ class ragdoll:
 
 		# self.wX = 1600
 		# self.wY = 800
-		self.wX = 1600
-		self.wY = 600
-		self.startX = self.wX / 2
+		self.wX = 2000 #1600
+		self.wY =  600
+		self.startX = self.wX / 4
 		self.dampingCoeff = 10000
-		self.torqueMult = 15000 #50000
+		self.torqueMult = 10000 #50000
 		self.foreground = (178,102,255,255) #foreground color
 		self.midground = (153,51,255,255) 
 		self.background = (127,0,255,255)
@@ -284,14 +284,20 @@ class ragdoll:
 
 	def calculate_reward(self):
 		'''calculates reward for current trial'''
-		self.reward = self.back.velocity[0] + self.step*0.01 + self.back.position[0]
-		
-		# print(self.reward)
+		# self.reward = self.back.velocity[0] + self.step*0.01 + self.back.position[0]
+		# self.reward = self.back.position[0] - (self.wX/4) 
+		self.reward = self.step*0.01 - self.back.position[0] + self.back.velocity[0] * 0.01
+
+		print(self.reward)
 		return(self.reward)
 
 
 	def tick(self):
 		"""simulates one timestep"""
+
+		maxRunLen = 500
+		if self.step > maxRunLen:
+			self.fallen = True
 
 		#upper body or butt has touched ground -> stop trial
 		self.h.begin = self.fell_over

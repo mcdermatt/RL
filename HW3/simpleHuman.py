@@ -195,6 +195,8 @@ h = space.add_collision_handler(COLLTYPE_BACK, COLLTYPE_GOAL)
 
 while True:
 
+	print(back.position[0])
+
 	leftKneeAng = leftShin.angle - leftThigh.angle
 	rightKneeAng = rightShin.angle - rightThigh.angle
 	# print(leftKneeAng,rightKneeAng)
