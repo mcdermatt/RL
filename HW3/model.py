@@ -13,7 +13,7 @@ import torch.optim as optim
 
 class Actor(nn.Module): #create actor class and inherit from nn.Module
 	def __init__(self, state_size = 13, action_size = 5):
-		super().__init__() #need to run this because init func of nn.Module is not run upon inherit
+		super(Actor,self).__init__() #need to run this because init func of nn.Module is not run upon inherit
 
 		#Linear is a simple flat fuly connected
 		self.fc1 = nn.Linear(state_size, 64) #input current 13 state observations
@@ -28,7 +28,7 @@ class Actor(nn.Module): #create actor class and inherit from nn.Module
 		x = F.relu(self.fc2(x))
     	#for output we only want one neuron to be fully fired
 		x = self.fc3(x)
-    
+		print(x)
     	#do not have to make output a certain function
     	#	need to map values of output layer to [0,1] for each element
 
@@ -39,12 +39,25 @@ class Actor(nn.Module): #create actor class and inherit from nn.Module
 
 class Critic(nn.Module):
 	def __init__(self, state_size = 13, action_size = 5):
-		super.__init__()
+		super(Critic,self).__init__()
 
 		#use only fully connected layers (not using any image data)
-		self.fc1 = nn.Linear(18,64) #input is state observations AND actions taken
-		self.fc2 = nn.Linear(64,64)
-		self.fc3 = nn.Linear(64,1) # only one value for output?
+		self.fcs1 = nn.Linear(state_size,64) #input is state observations
+		self.fcs2 = nn.Linear(64,64)
+		self.fcs3 = nn.Linear(64,1) # only one value for output?
 
-	def forward():
-		pass
+		self.fca1 = nn.Linear(action_size,64)
+
+		self.fc1 = nn.Linear(64,1) #outputs single value -> Q
+
+		#define bn1 func
+		self.bn1 = nn.BatchNorm1d(64)
+
+	def forward(self, state, action):
+		"""(state, action) -> Q"""
+		xs = F.relu(self.bn1(self.fcs1(state)))
+		xs = F.relu(self.fcs2(xs))
+		xa = self.fca1(action)
+		x = F.relu(torch.add(xs,xa))
+
+		return(self.fc1(x))
