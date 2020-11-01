@@ -61,7 +61,7 @@ class Agent():
 		    experiences (Tuple[torch.Tensor]): tuple of (s, a, r, s', done) tuples 
 		    gamma (float): discount factor
 		"""
-		# print("learning")
+		print("learning")
 		states, actions, rewards, next_states, dones = experiences
 
 		# ---------------------------- update critic ---------------------------- #

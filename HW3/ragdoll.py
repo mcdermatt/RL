@@ -34,13 +34,14 @@ class ragdoll:
 		self.wY =  600
 		self.startX = self.wX / 4
 		self.dampingCoeff = 10000
-		self.torqueMult = 10000 #50000
+		self.torqueMult = 15000 #50000
 		self.foreground = (178,102,255,255) #foreground color
 		self.midground = (153,51,255,255) 
 		self.background = (127,0,255,255)
 		self.floor = (96,96,96,255)
 		self.sky = (32,32,32,255)
 		self.fallen = False
+		self.reward = 0
 
 		self.screen = pygame.display.set_mode((self.wX,self.wY))
 		self.clock = pygame.time.Clock()
@@ -128,7 +129,7 @@ class ragdoll:
 		self.noSplits = pymunk.RotaryLimitJoint(self.leftThigh,self.rightThigh,-2,2)
 		self.space.add(self.noSplits)
 		#add back
-		self.back = self.add_limb(self.space,(self.startX,245), mass = 2, length = 30, thiccness = 15, color = self.midground, COLLTYPE = 3)# filter = 0b01)
+		self.back = self.add_limb(self.space,(self.startX,245), mass = 10, length = 30, thiccness = 15, color = self.midground, COLLTYPE = 3)# filter = 0b01)
 		self.spine = pymunk.PivotJoint(self.butt,self.back,(self.startX,300))
 		self.spineLimits = pymunk.RotaryLimitJoint(self.butt,self.back,self.backMin,self.backMax)
 		self.spineDamp = pymunk.DampedRotarySpring(self.butt,self.back,0,0,self.dampingCoeff)
@@ -218,6 +219,7 @@ class ragdoll:
 	    # print("player fell over at x =", self.back.position[0])
 	    # pygame.quit()
 	    self.fallen = True
+	    self.reward -= 1000
 	    self.calculate_reward()
 	    # self.update_values()
 	    return True
@@ -286,7 +288,10 @@ class ragdoll:
 		'''calculates reward for current trial'''
 		# self.reward = self.back.velocity[0] + self.step*0.01 + self.back.position[0]
 		# self.reward = self.back.position[0] - (self.wX/4) 
-		self.reward = self.step*0.01 - self.back.position[0] + self.back.velocity[0] * 0.01
+		# self.reward = self.step*0.01 + self.back.position[0] + self.back.velocity[0] * 0.01
+		self.reward = self.step * 0.1 + self.back.position[0]
+
+		self.reward = self.reward - 1000*torch.sum(abs(self.actionvec))
 
 		print(self.reward)
 		return(self.reward)

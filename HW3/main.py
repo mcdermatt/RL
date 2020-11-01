@@ -13,6 +13,8 @@ from agent import Agent
 #	allow script to run with viz = False
 #	figure out loss function
 #	standardize inputs and outputs
+#	bring back to GPU
+#	fix bug- action values are not getting sigmoided correctly
 
 # if torch.cuda.is_available():
 # 	device = torch.device("cuda:0")  # you can continue going on here, like cuda:1 cuda:2....etc.
@@ -33,7 +35,7 @@ trials = 1000 #repeat simulation Epoch times
 learning_rate = 0.001
 for trial in range(trials):
 	#resets simulation
-	body = ragdoll(viz = True, arms = False, playBackSpeed = 10)
+	body = ragdoll(viz = True, arms = False, playBackSpeed = 1)
 
 	while body.fallen == False:
 		#get states of ragdoll
@@ -43,7 +45,8 @@ for trial in range(trials):
 		#get action from actor
 		agent.actor_local.eval() #lock actor_local
 		with torch.no_grad():
-			action = agent.actor_local.forward(states.view(-1,13))
+			action = agent.actor_local.forward(states.view(-1,13)) - 0.5 #subtract to account for negative
+			print("action = ",action)
 		agent.actor_local.train() #unlock actor_local
 
 		body.activate_joints(action[0,0],action[0,1],action[0,2],action[0,3],action[0,4])
