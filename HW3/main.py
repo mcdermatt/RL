@@ -9,12 +9,14 @@ import time
 from agent import Agent
 
 #TODO 
-#	Convert Net() to actor critic network - this will handle issues of calculating loss
 #	allow script to run with viz = False
 #	figure out loss function
-#	standardize inputs and outputs
 #	bring back to GPU
 #	fix bug- action values are not getting sigmoided correctly
+#	NLL_loss vs MSE_loss
+
+# Is critic output pinned between 0 and 1? -> if so, thats why the critic error could be exploding
+
 
 # if torch.cuda.is_available():
 # 	device = torch.device("cuda:0")  # you can continue going on here, like cuda:1 cuda:2....etc.
@@ -31,31 +33,67 @@ device = torch.device("cpu")
 #init agent (state size, action size)
 agent = Agent(13,5)
 
-trials = 1000 #repeat simulation Epoch times
-learning_rate = 0.001
+noise_mult = 1
+noise_decay = 0.975
+trials = 10000 #repeat simulation <trials> times
 for trial in range(trials):
+	print("Trial #: ", trial)
+
 	#resets simulation
-	body = ragdoll(viz = True, arms = False, playBackSpeed = 1)
-
-	while body.fallen == False:
-		#get states of ragdoll
-		states = body.get_states()
-		states = states.to(device) #send to GPU
-
-		#get action from actor
-		agent.actor_local.eval() #lock actor_local
+	body = ragdoll(viz = True, arms = False, playBackSpeed = 10, assist = False)
+	states = body.get_states()
+	states = states.to(device) #send to GPU
+	# while body.fallen == False:
+	while body.game_over == False:
+		#get actions to take from forward network
+		agent.actor.eval() #lock actor
 		with torch.no_grad():
-			action = agent.actor_local.forward(states.view(-1,13)) - 0.5 #subtract to account for negative
-			print("action = ",action)
-		agent.actor_local.train() #unlock actor_local
+			action = agent.actor.forward(states.view(-1,13))
+			action += torch.randn(5) * noise_mult # add noise
+			#	spinning up says I don't need fancy noise function
+			# print("action (in main loop) = ",action)
+		agent.actor.train() #unlock actor
 
+		#perform action determined by forward network
 		body.activate_joints(action[0,0],action[0,1],action[0,2],action[0,3],action[0,4])
 		body.tick()
+		reward = body.calculate_reward()
+		# print("reward = ",reward)
+
+ 		#get new states after action taken
 		states_next = body.get_states()
-		#
-		agent.step(states,action,body.reward,states_next,body.fallen)
+		states_next = states_next.to(device) #send to GPU
+		# print("states = ", states)
+		# print("states_next = ", states_next)
 
+		# if body.step%25 == 0:
+		# 	is_learning = True
+		# else:
+		# 	is_learning = False
 
+		#update agent once in a while
+		agent.step(states,action,reward,states_next,body.game_over)
+		#	if enough trials have been run, randomly samples batch of trials form memory
+		#	and attempts to apply network to them
+
+		states = states_next
+
+		# if body.step%50 == 0:
+		# 	print("action (in main loop) = ",action)
+
+		if body.game_over == True:
+			print("Reward = ", body.reward)
+			print("action (in main loop) = ",action)
+
+		# agent.step(states,action,reward,states_next,1)
+	noise_mult = noise_mult * noise_decay
+	if noise_mult < 0.05:
+		noise_mult = 0.05
+
+torch.save(agent.actor.state_dict(), 'checkpoint_actor.pth')
+torch.save(agent.critic.state_dict(), 'checkpoint_critic.pth')
+torch.save(agent.actor_target.state_dict(), 'checkpoint_actor_t.pth')
+torch.save(agent.critic_target.state_dict(), 'checkpoint_critic_t.pth')
 
 
 #x is the input (states of robot joints)

@@ -6,12 +6,12 @@ import pygame.color
 from pygame.locals import *
 import pickle
 import pygame
+import numpy as np
 
-
-# wX = 1600
-# wY = 800
-wX = 1000
-wY = 700
+wX = 1600
+wY = 600
+# wX = 1000
+# wY = 700
 
 dampingCoeff = 10000
 
@@ -21,8 +21,9 @@ background = (127,0,255,255)
 sky = (32,32,32,255)
 floor = (96,96,96,255)
 
-# Arms = True
-Arms = False
+Arms = True
+# Arms = False
+assist = False
 
 #init pygame
 pymunk.pygame_util.positive_y_is_up = False
@@ -58,12 +59,13 @@ class Box:
             space.add(segment)
 Box()
 
-def add_limb(space,pos,length = 30, mass = 2, thiccness = 10, color = (100,100,100,255), COLLTYPE = 1):#filter = 0b100):
+def add_limb(space,pos,length = 30, mass = 2, thiccness = 10, color = (100,100,100,255), COLLTYPE = 1, elasticity = 0.1):#filter = 0b100):
 	body = pymunk.Body()
 	body.position = Vec2d(pos)
 	shape = pymunk.Segment(body, (0,length), (0,-length), thiccness)
 	shape.mass = mass
 	shape.friction = 0.7
+	shape.elasticity = elasticity
 	shape.color = color
 	# COLLTYPE_BACK = 3
 	if COLLTYPE == 1:
@@ -82,7 +84,8 @@ def add_limb(space,pos,length = 30, mass = 2, thiccness = 10, color = (100,100,1
 	return body
 
 #add right leg
-rightShin = add_limb(space, (100,500), color = background)
+rightShin = add_limb(space, (100,500), color = background, elasticity = 0.8)
+# rightShin.elasticity = 0.8
 rightThigh = add_limb(space, (100,400), thiccness = 15, color = background)
 rightKnee = pymunk.PivotJoint(rightShin,rightThigh,(100,450))
 rightKneeLimits = pymunk.RotaryLimitJoint(rightShin,rightThigh,-2.5,0)
@@ -92,7 +95,8 @@ space.add(rightKneeLimits)
 space.add(rightKneeDamp)
 
 #add left leg
-leftShin = add_limb(space, (100,500), color = midground)
+leftShin = add_limb(space, (100,500), color = midground, elasticity = 0.8)
+# leftShin.elasticity = 0.8
 leftThigh = add_limb(space, (100,400), thiccness = 15, color = midground)
 leftKnee = pymunk.PivotJoint(leftShin,leftThigh,(100,450))
 leftKneeLimits = pymunk.RotaryLimitJoint(leftShin,leftThigh,-2.5,0)
@@ -195,13 +199,19 @@ h = space.add_collision_handler(COLLTYPE_BACK, COLLTYPE_GOAL)
 
 while True:
 
-	print(back.position[0])
+	print(butt.position[1])
+	
+	# print(back.angle)
 
 	leftKneeAng = leftShin.angle - leftThigh.angle
 	rightKneeAng = rightShin.angle - rightThigh.angle
 	# print(leftKneeAng,rightKneeAng)
 	h.begin = fell_over
     
+	# back.apply_force_at_world_point((0,1000),(0,0))
+	if assist == True:
+		back.apply_force_at_local_point((-10000*np.sin(back.angle),0),(0,0))
+
 	for event in pygame.event.get():
 	    if event.type == QUIT:
 	        exit()

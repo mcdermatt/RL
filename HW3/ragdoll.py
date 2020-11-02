@@ -26,7 +26,7 @@ from replayBuffer import ReplayBuffer
 class ragdoll:
 	""" torques (input) = [right knee, left knee, right hip, left hip, back] """
 
-	def __init__(self, viz = True, arms = True, playBackSpeed = 1):
+	def __init__(self, viz = True, arms = True, playBackSpeed = 1, assist = False):
 
 		# self.wX = 1600
 		# self.wY = 800
@@ -40,8 +40,10 @@ class ragdoll:
 		self.background = (127,0,255,255)
 		self.floor = (96,96,96,255)
 		self.sky = (32,32,32,255)
-		self.fallen = False
+		self.game_over = False
 		self.reward = 0
+		self.runLen = 200
+		self.assist = assist
 
 		self.screen = pygame.display.set_mode((self.wX,self.wY))
 		self.clock = pygame.time.Clock()
@@ -49,6 +51,7 @@ class ragdoll:
 		self.playBackSpeed = playBackSpeed
 		# self.eps = eps
 		self.discountFactor = 0.99
+		self.fall_penalty = 0
 
 		if self.viz:
 			#init pygame
@@ -58,7 +61,7 @@ class ragdoll:
 			self.box_size = 200
 			self.box_texts = {}
 			self.help_txt = self.font.render(
-			    "Pymunk simple human 2D demo. Use mouse to drag/drop", 
+			    "ragdoll sim", 
 			    1, pygame.color.THECOLORS["darkgray"])
 			self.mouse_joint = None
 			self.mouse_body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
@@ -93,7 +96,7 @@ class ragdoll:
 		self.backMin = -0.25
 		self.backMax = 1
 		#add right leg
-		self.rightShin = self.add_limb(self.space, (self.startX,500), color = self.background, friction = 25, mass = 1)
+		self.rightShin = self.add_limb(self.space, (self.startX,500), color = self.background, friction = 5, mass = 1, elasticity = 0.3)
 		self.rightThigh = self.add_limb(self.space, (self.startX,400), thiccness = 15, color = self.background)
 		self.rightKnee = pymunk.PivotJoint(self.rightShin,self.rightThigh,(self.startX,450))
 		self.rightKneeLimits = pymunk.RotaryLimitJoint(self.rightShin,self.rightThigh,self.kneeMin,self.kneeMax)
@@ -102,7 +105,7 @@ class ragdoll:
 		self.space.add(self.rightKneeLimits)
 		self.space.add(self.rightKneeDamp)
 		#add left leg
-		self.leftShin = self.add_limb(self.space, (self.startX,500), color = self.midground, friction = 25, mass = 1)
+		self.leftShin = self.add_limb(self.space, (self.startX,500), color = self.midground, friction = 5, mass = 1, elasticity = 0.3)
 		self.leftThigh = self.add_limb(self.space, (self.startX,400), thiccness = 15, color = self.midground)
 		self.leftKnee = pymunk.PivotJoint(self.leftShin,self.leftThigh,(self.startX,450))
 		self.leftKneeLimits = pymunk.RotaryLimitJoint(self.leftShin,self.leftThigh,self.kneeMin,self.kneeMax)
@@ -111,8 +114,8 @@ class ragdoll:
 		self.space.add(self.leftKnee)
 		self.space.add(self.leftKneeLimits)
 		#add butt & hips
-		buttOffset = 10 
-		# buttOffset = 0
+		# buttOffset = 10 
+		buttOffset = 0
 		self.butt = self.add_limb(self.space,(self.startX-buttOffset,320), length = 10, thiccness = 17,color = self.midground, COLLTYPE = 3)
 		self.rightHip = pymunk.PivotJoint(self.rightThigh,self.butt,(self.startX,350))
 		self.rightHipLimits = pymunk.RotaryLimitJoint(self.rightThigh,self.butt,self.hipMin,self.hipMax)
@@ -129,7 +132,7 @@ class ragdoll:
 		self.noSplits = pymunk.RotaryLimitJoint(self.leftThigh,self.rightThigh,-2,2)
 		self.space.add(self.noSplits)
 		#add back
-		self.back = self.add_limb(self.space,(self.startX,245), mass = 10, length = 30, thiccness = 15, color = self.midground, COLLTYPE = 3)# filter = 0b01)
+		self.back = self.add_limb(self.space,(self.startX,245), mass = 2, length = 30, thiccness = 15, color = self.midground, COLLTYPE = 3)# filter = 0b01)
 		self.spine = pymunk.PivotJoint(self.butt,self.back,(self.startX,300))
 		self.spineLimits = pymunk.RotaryLimitJoint(self.butt,self.back,self.backMin,self.backMax)
 		self.spineDamp = pymunk.DampedRotarySpring(self.butt,self.back,0,0,self.dampingCoeff)
@@ -191,12 +194,13 @@ class ragdoll:
 		self.history = ReplayBuffer(action_size = 5, buffer_size = 10000, batch_size = 100)
 
 
-	def add_limb(self,space,pos,length = 30, mass = 2, thiccness = 10, color = (100,100,100,255), COLLTYPE = 1, friction = 0.7):#filter = 0b100):
+	def add_limb(self,space,pos,length = 30, mass = 2, thiccness = 10, color = (100,100,100,255), COLLTYPE = 1, friction = 0.7, elasticity = 0.2):#filter = 0b100):
 		body = pymunk.Body()
 		body.position = Vec2d(pos)
 		shape = pymunk.Segment(body, (0,length), (0,-length), thiccness)
 		shape.mass = mass
 		shape.friction = friction
+		shape.elasticity = elasticity
 		shape.color = color
 		# COLLTYPE_BACK = 3
 		if COLLTYPE == 1:
@@ -216,13 +220,19 @@ class ragdoll:
 
 	#init collision callback function
 	def fell_over(self,space, arbiter, x):
-	    # print("player fell over at x =", self.back.position[0])
+	    print("player fell over at x =", self.back.position[0])
 	    # pygame.quit()
-	    self.fallen = True
-	    self.reward -= 1000
-	    self.calculate_reward()
+	    # self.fallen = True
+	    self.game_over = True
+	    self.fall_penalty = -10000
+	    # self.calculate_reward()
 	    # self.update_values()
 	    return True
+
+	def got_up(self,space,arbiter,x):
+		print("player got up at x =", self.back.position[0])
+		self.fall_penalty = 0
+		return True
 
 	def get_states(self):
 		"""gets positions and velocities of each joint in Rad and Rad/s (Rounded to nearest pstep/ vstep incrament)"""
@@ -262,6 +272,7 @@ class ragdoll:
 		self.statevec = torch.from_numpy(statevec) #??
 		# print("sv = ", self.statevec)
 
+		# return(self.statevec)
 		return(self.statevec.float()) #cast to float (is double)
 		
 	def activate_joints(self, rightKneeAction, leftKneeAction, rightHipAction, leftHipAction, backAction):
@@ -282,30 +293,41 @@ class ragdoll:
 		# print(actionvec)
 		# self.actionvec = torch.from_numpy(actionvec)
 
+		if self.assist == True:
+			self.back.apply_force_at_local_point((-10000*np.sin(self.back.angle),0),(0,0))
+
 		self.actionvec = torch.Tensor([rightHipAction,leftKneeAction,rightHipAction,leftHipAction,backAction])
 
 	def calculate_reward(self):
 		'''calculates reward for current trial'''
-		# self.reward = self.back.velocity[0] + self.step*0.01 + self.back.position[0]
 		# self.reward = self.back.position[0] - (self.wX/4) 
-		# self.reward = self.step*0.01 + self.back.position[0] + self.back.velocity[0] * 0.01
-		self.reward = self.step * 0.1 + self.back.position[0]
 
-		self.reward = self.reward - 1000*torch.sum(abs(self.actionvec))
+		#consider adding how far angle of back is from zero as negative reward
 
-		print(self.reward)
+		torqueFactor = 100*torch.sum(self.actionvec**2)
+		# print("torque factor = ",torqueFactor)
+
+		#shamelessly stolen from MatLab RL tutorial
+		# self.reward = 10*self.butt.velocity[0] - 0.001*self.butt.position[1]**2 - torqueFactor + self.fall_penalty
+		self.reward = 10*self.butt.position[0] + 10*self.butt.velocity[0] - 0.001*self.butt.position[1]**2 - torqueFactor + self.fall_penalty
+
+
+		# self.reward = -abs(1000*self.back.angle) #+ self.fall_penalty
+
+		# print(self.reward)
 		return(self.reward)
 
 
 	def tick(self):
 		"""simulates one timestep"""
 
-		maxRunLen = 500
-		if self.step > maxRunLen:
-			self.fallen = True
+		self.h.begin = self.fell_over #upper body or butt has touched ground
+		
+		if self.step > self.runLen:
+			self.game_over = True
 
-		#upper body or butt has touched ground -> stop trial
-		self.h.begin = self.fell_over
+		#not used
+		# self.h.separate = self.got_up #got up off the ground
 
 		for event in pygame.event.get():
 			    if event.type == QUIT:
@@ -336,16 +358,16 @@ class ragdoll:
 	def run(self):
 		"""runs simulation for numerous timesteps (used for debug)"""
 		
-		self.fallen = False
-		while self.fallen == False:
+		self.game_over = False
+		while self.game_over == False:
 
 			self.get_states()
 
 			#upper body or butt has touched ground
 			self.h.begin = self.fell_over
 		    #timed out
-			if self.step > 1000:
-				self.fallen = True
+			if self.step > 300:
+				self.game_over = True
 				self.calculate_reward()
 
 			for event in pygame.event.get():
