@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+import numpy as np
 
 #TODO
 # Take in input size from ragdoll model so we can add arms later
@@ -12,7 +13,7 @@ import torch.optim as optim
 # Add Replay Buffer
 
 class Actor(nn.Module): #create actor class and inherit from nn.Module
-	def __init__(self, state_size = 13, action_size = 5, nodes1 = 1024, nodes2 = 512):
+	def __init__(self, state_size = 13, action_size = 5, nodes1 = 4096, nodes2 = 2048):
 		super(Actor,self).__init__() #need to run this because init func of nn.Module is not run upon inherit
 
 		#Linear is a simple flat fuly connected
@@ -25,7 +26,7 @@ class Actor(nn.Module): #create actor class and inherit from nn.Module
 		self.bn1 = nn.BatchNorm1d(nodes1)
 		self.bn2 = nn.BatchNorm1d(nodes2)
 
-		#reset params
+		#reset params - might be bad??
 		self.fc1.weight.data.uniform_(-1.5e-3, 1.5e-3)
 		self.fc2.weight.data.uniform_(-1.5e-3, 1.5e-3)
 		self.fc3.weight.data.uniform_(-3e-3, 3e-3)
@@ -52,30 +53,49 @@ class Actor(nn.Module): #create actor class and inherit from nn.Module
 		return(F.torch.tanh(x))
 
 class Critic(nn.Module):
-    """Critic (Value) Model."""
+	"""Critic (Value) Model.""" 
+	def __init__(self, state_size, action_size, fc1_units=1024, fc2_units=512):
+		super(Critic, self).__init__()
+		self.fc1 = nn.Linear(state_size, fc1_units)
+		self.fc2 = nn.Linear(fc1_units, fc2_units)
+		# self.fc3 = nn.Linear(fc2_units, 1)
+		self.action_value = nn.Linear(action_size,fc2_units)
+		self.q = nn.Linear(fc2_units,1)
 
-    def __init__(self, state_size, action_size, fcs1_units=1024, fc2_units=512):
-        super(Critic, self).__init__()
-        self.fcs1 = nn.Linear(state_size, fcs1_units)
-        self.fc2 = nn.Linear(fcs1_units+action_size, fc2_units)
-        self.fc3 = nn.Linear(fc2_units, 1)
-        self.reset_parameters()
+		f1 = 1 / (np.sqrt(self.fc1.weight.data.size()[0]))
+		self.fc1.weight.data.uniform_(-f1, f1)
+		self.fc1.bias.data.uniform_(-f1, f1)
+		f2 = 0.002
+		self.fc2.weight.data.uniform_(-f2, f2)
+		self.fc2.weight.data.uniform_(-f2, f2)
+		f3 = 0.003
+		self.q.weight.data.uniform_(-f3, f3)
+		self.q.weight.data.uniform_(-f3, f3)
 
-    def reset_parameters(self):
-        self.fcs1.weight.data.uniform_(-3e-3, 3e-3)
-        self.fc2.weight.data.uniform_(-3e-3, 3e-3)
-        self.fc3.weight.data.uniform_(-3e-3, 3e-3)
+		self.bn1 = nn.LayerNorm(fc1_units)
+		self.bn2 = nn.LayerNorm(fc2_units)
 
-    def forward(self, state, action):
-        """Build a critic (value) network that maps (state, action) pairs -> Q-values."""
-        xs = F.relu(self.fcs1(state))
-        x = torch.cat((xs, action), dim=1)
-        x = F.relu(self.fc2(x))
-        return self.fc3(x)
+	def forward(self, state, action):
+		"""critic network that maps (state, action) pairs -> Q-values."""
+		state_value = F.relu(self.bn1(self.fc1(state)))
+		state_value = self.fc2(state_value)
+		state_value = self.bn2(state_value)
+
+		action_value = F.relu(self.action_value(action))
+		state_action_value = F.relu(torch.add(state_value, action_value))
+		state_action_value = self.q(state_action_value)
+
+		# x = torch.cat((xs, action), dim=1)
 
 
+		# x = F.relu(self.fc2(x))
 
-#from towards datascience article
+
+		# return self.fc3(x)
+		return state_action_value
+
+
+#from towards data science article
 # class Critic(nn.Module):
 #     def __init__(self, input_size = 18, hidden_size=512, output_size=1):
 #         super(Critic, self).__init__()

@@ -11,17 +11,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-
 from replayBuffer import ReplayBuffer
 
-#TODO
-# make step function work with viz = False
-# standardize ins and outs similar to gym enviornments
-# increase elasticity of collisions between feet and ground 
-#	-> better simulates ankle action in running
-# create ReplayBuffer class to store history
-# update history within tick()
-# change value func so it is accessable at every tick()
 
 class ragdoll:
 	""" torques (input) = [right knee, left knee, right hip, left hip, back] """
@@ -31,10 +22,10 @@ class ragdoll:
 		# self.wX = 1600
 		# self.wY = 800
 		self.wX = 2000 #1600
-		self.wY =  600
+		self.wY = 600
 		self.startX = self.wX / 4
-		self.dampingCoeff = 10000
-		self.torqueMult = 15000 #50000
+		self.dampingCoeff = 2500 # 10000
+		self.torqueMult = 15000 #15000 #50000
 		self.foreground = (178,102,255,255) #foreground color
 		self.midground = (153,51,255,255) 
 		self.background = (127,0,255,255)
@@ -132,7 +123,7 @@ class ragdoll:
 		self.noSplits = pymunk.RotaryLimitJoint(self.leftThigh,self.rightThigh,-2,2)
 		self.space.add(self.noSplits)
 		#add back
-		self.back = self.add_limb(self.space,(self.startX,245), mass = 2, length = 30, thiccness = 15, color = self.midground, COLLTYPE = 3)# filter = 0b01)
+		self.back = self.add_limb(self.space,(self.startX,245), mass = 0.2, length = 30, thiccness = 15, color = self.midground, COLLTYPE = 3)# mass = 2
 		self.spine = pymunk.PivotJoint(self.butt,self.back,(self.startX,300))
 		self.spineLimits = pymunk.RotaryLimitJoint(self.butt,self.back,self.backMin,self.backMax)
 		self.spineDamp = pymunk.DampedRotarySpring(self.butt,self.back,0,0,self.dampingCoeff)
@@ -142,14 +133,14 @@ class ragdoll:
 		if arms:
 			#add head
 			shoulderHeight = 240
-			self.head = self.add_limb(self.space,(self.startX,shoulderHeight - 50), length = 10, thiccness = 22,color = self.midground, COLLTYPE = 3)
+			self.head = self.add_limb(self.space,(self.startX,shoulderHeight - 50), mass = 0.1, length = 10, thiccness = 22,color = self.midground, COLLTYPE = 3)
 			self.neck = pymunk.PivotJoint(self.back,self.head,(self.startX, shoulderHeight - 40))
 			self.neckLimits = pymunk.RotaryLimitJoint(self.back,self.head,-0.2,0.8)
 			self.space.add(self.neck)
 			self.space.add(self.neckLimits)
 			#add right arm
-			self.rightLowerArm = self.add_limb(self.space, (self.startX,shoulderHeight+80), color = self.foreground, COLLTYPE = 2)
-			self.rightUpperArm = self.add_limb(self.space, (self.startX,shoulderHeight), thiccness = 12, color = self.foreground, COLLTYPE = 2)
+			self.rightLowerArm = self.add_limb(self.space, (self.startX,shoulderHeight+80),mass = 0.1, color = self.foreground, COLLTYPE = 2)
+			self.rightUpperArm = self.add_limb(self.space, (self.startX,shoulderHeight),mass = 0.1, thiccness = 12, color = self.foreground, COLLTYPE = 2)
 			self.rightElbow = pymunk.PivotJoint(self.rightLowerArm,self.rightUpperArm,(self.startX,shoulderHeight+50))
 			self.rightElbowLimits = pymunk.RotaryLimitJoint(self.rightLowerArm,self.rightUpperArm,0,2.2)
 			self.rightElbowDamp = pymunk.DampedRotarySpring(self.rightLowerArm,self.rightUpperArm,0,0,self.dampingCoeff)
@@ -157,8 +148,8 @@ class ragdoll:
 			self.space.add(self.rightElbowLimits)
 			self.space.add(self.rightElbowDamp)
 			#add left arm
-			self.leftUpperArm = self.add_limb(self.space, (self.startX,shoulderHeight), thiccness = 12, color = self.background, COLLTYPE = 2)
-			self.leftLowerArm = self.add_limb(self.space, (self.startX,shoulderHeight+80), color = self.background, COLLTYPE = 2)
+			self.leftUpperArm = self.add_limb(self.space, (self.startX,shoulderHeight),mass = 0.1, thiccness = 12, color = self.background, COLLTYPE = 2)
+			self.leftLowerArm = self.add_limb(self.space, (self.startX,shoulderHeight+80),mass = 0.1, color = self.background, COLLTYPE = 2)
 			self.leftElbow = pymunk.PivotJoint(self.leftLowerArm,self.leftUpperArm,(self.startX,shoulderHeight+50))
 			self.leftElbowLimits = pymunk.RotaryLimitJoint(self.leftLowerArm,self.leftUpperArm,0,2.2)
 			self.leftElbowDamp = pymunk.DampedRotarySpring(self.leftLowerArm,self.leftUpperArm,0,0,self.dampingCoeff)
@@ -300,21 +291,23 @@ class ragdoll:
 
 	def calculate_reward(self):
 		'''calculates reward for current trial'''
-		# self.reward = self.back.position[0] - (self.wX/4) 
-
-		#consider adding how far angle of back is from zero as negative reward
 
 		torqueFactor = 100*torch.sum(self.actionvec**2)
 		# print("torque factor = ",torqueFactor)
 
 		#shamelessly stolen from MatLab RL tutorial
 		# self.reward = 10*self.butt.velocity[0] - 0.001*self.butt.position[1]**2 - torqueFactor + self.fall_penalty
-		self.reward = 10*self.butt.position[0] + 10*self.butt.velocity[0] - 0.001*self.butt.position[1]**2 - torqueFactor + self.fall_penalty
 
+		#fav so far
+		self.reward = 10*self.step + 30*self.butt.position[0] - 0.1*self.butt.position[1]**2 - torqueFactor + self.fall_penalty
 
-		# self.reward = -abs(1000*self.back.angle) #+ self.fall_penalty
+		#balance back
+		# self.reward = -abs(1000*self.back.angle) - torqueFactor #+ self.fall_penalty
 
-		# print(self.reward)
+		#test - should make all torque outputs zero at convergence...
+		# self.reward = -torqueFactor #+ self.fall_penalty
+
+		# print(type(self.reward))
 		return(self.reward)
 
 
@@ -323,8 +316,12 @@ class ragdoll:
 
 		self.h.begin = self.fell_over #upper body or butt has touched ground
 		
-		if self.step > self.runLen:
+		if self.step > self.runLen: #time over
 			self.game_over = True
+
+		if abs(self.butt.angle) > 2: #doing some cartwheel BS
+			self.game_over = True
+			self.fall_penalty = -10000
 
 		#not used
 		# self.h.separate = self.got_up #got up off the ground

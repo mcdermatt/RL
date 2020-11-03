@@ -199,7 +199,7 @@ h = space.add_collision_handler(COLLTYPE_BACK, COLLTYPE_GOAL)
 
 while True:
 
-	print(butt.position[1])
+	print(back.angle)
 	
 	# print(back.angle)
 

@@ -8,15 +8,15 @@ import torch.optim as optim
 from replayBuffer import ReplayBuffer
 from OUNoise import OUNoise
 
-# device = torch.device("cuda:0")
-device = torch.device("cpu")
+device = torch.device("cuda:0")
+# device = torch.device("cpu")
 
 
-LR_ACTOR = 0.0001
-LR_CRITIC = 0.001
+LR_ACTOR = 0.0001# 0.0001
+LR_CRITIC = 0.001 #0.001
 WEIGHT_DECAY = 0.001
-BUFFER_SIZE = 1000000
-BATCH_SIZE = 10 #tried 100 -> very slow on cpu
+BUFFER_SIZE = 100000 #1000000
+BATCH_SIZE =  10 # was 10, tried 100 -> very slow on cpu
 discount_factor = 0.99
 TAU = 0.001
 
@@ -38,12 +38,15 @@ class Agent():
 
 		self.memory = ReplayBuffer(action_size, BUFFER_SIZE, BATCH_SIZE)
 
-		# self.noise = OUNoise(action_size)
+		self.noise = OUNoise(action_size)
 
 	def step(self, state, action,reward,next_state,done, is_learning = True):
 		"""save experience to memory buffer"""
+		#need to conver to numpy array
 		self.memory.add(state,action,reward,next_state,done)
+		# print(state,action,reward,next_state,done)
 
+		#sample (returns numpy array)
 		if len(self.memory) > BATCH_SIZE and is_learning == True:
 			experiences = self.memory.sample()
 			# print("learning")
@@ -100,10 +103,9 @@ class Agent():
 		#Attempt 2:
 		Qvals = self.critic.forward(states,actions)
 		next_actions = self.actor_target.forward(next_states)
-		next_Q = self.critic_target.forward(next_states, next_actions) #try with .detatch()?
-		Qprime = rewards + discount_factor*next_Q
+		next_Q = self.critic_target.forward(next_states, next_actions)
+		Qprime = rewards + discount_factor*next_Q*(1-dones) #ignores result of samples that are at the end
 
-		# critic_loss = nn.MSELoss(Qvals,Qprime) #Boolean value of Tensor with more than one value is ambiguous
 		closs = nn.SmoothL1Loss()
 		# closs = nn.MSELoss()
 		critic_loss = closs(Qvals,Qprime)
@@ -116,6 +118,7 @@ class Agent():
 		# Compute actor loss
 		actions_pred = self.actor(states)
 		actor_loss = -self.critic(states, actions_pred).mean()
+		# actor_loss = self.critic(states, actions_pred).mean()
 		# print("actor_loss = ", actor_loss)
 		# Minimize the loss
 		self.actor_optimizer.zero_grad()
