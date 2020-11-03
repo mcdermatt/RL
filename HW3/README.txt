@@ -1,3 +1,13 @@
+Run interactive QWOP game with:
+<python simpleHuman.py>
+
+Train model with:
+<python main.py>
+
+View results with:
+<python plotResults.py>
+
+
 References:
 
 https://towardsdatascience.com/deep-deterministic-policy-gradients-explained-2d94655a9b7b

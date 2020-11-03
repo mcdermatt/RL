@@ -10,11 +10,6 @@ from agent import Agent
 import numpy
 
 
-#TODO 
-#	BUG FIX:
-#		Critic loss decreasing, actor loss near constant- doing weird shit
-#	Check the done flag in my replayBuffer
-
 if torch.cuda.is_available():
 	device = torch.device("cuda:0")
 	torch.set_default_tensor_type('torch.cuda.FloatTensor') 
@@ -28,10 +23,10 @@ torch.set_default_tensor_type('torch.cuda.FloatTensor')
 #init agent (state size, action size)
 agent = Agent(13,5)
 
-# noise_mult = 0.25
-# noise_decay = 0.99 # 0.99
-trials = 50 #repeat simulation <trials> times
+trials = 10000 #repeat simulation <trials> times
 rews = numpy.zeros(trials)
+agent_loss = numpy.zeros(trials)
+critic_loss = numpy.zeros(trials)
 
 for trial in range(trials):
 	print("Trial #: ", trial)
@@ -46,13 +41,6 @@ for trial in range(trials):
 		agent.actor.eval() #lock actor
 		with torch.no_grad():
 			action = agent.actor.forward(states.view(-1,13))
-
-			#add OU Noise
-			# action += agent.noise.sample()
-
-			# action += torch.randn(5) * noise_mult # add noise
-			#	spinning up says I don't need fancy noise function
-			# print("action (in main loop) = ",action)
 		agent.actor.train() #unlock actor
 
 		#bring back to cpu for running on model - not sure if this is necessary
@@ -76,25 +64,24 @@ for trial in range(trials):
 
 		states = states_next
 
-		# if body.step%50 == 0:
-		# 	print("action (in main loop) = ",action)
 
 		if body.game_over == True:
 			print("Reward = ", body.reward)
 			print("action (in main loop) = ",action)
 
-		# agent.step(states,action,reward,states_next,1)
-	# noise_mult = noise_mult * noise_decay
-	# if noise_mult < 0.05:
-	# 	noise_mult = 0.05
 	rews[trial] = body.reward.cpu().numpy()
+	agent_loss[trial] = agent.aLossOut
+	critic_loss[trial] = agent.cLossOut
+	
 
 numpy.save("rewards",rews)
+numpy.save("agent_loss",agent_loss)
+numpy.save("critic_loss", critic_loss)
 
 
-# torch.save(agent.actor.state_dict(), 'checkpoint_actor.pth')
-# torch.save(agent.critic.state_dict(), 'checkpoint_critic.pth')
-# torch.save(agent.actor_target.state_dict(), 'checkpoint_actor_t.pth')
-# torch.save(agent.critic_target.state_dict(), 'checkpoint_critic_t.pth')
+torch.save(agent.actor.state_dict(), 'checkpoint_actor.pth')
+torch.save(agent.critic.state_dict(), 'checkpoint_critic.pth')
+torch.save(agent.actor_target.state_dict(), 'checkpoint_actor_t.pth')
+torch.save(agent.critic_target.state_dict(), 'checkpoint_critic_t.pth')
 
 

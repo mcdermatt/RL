@@ -212,12 +212,10 @@ class ragdoll:
 	#init collision callback function
 	def fell_over(self,space, arbiter, x):
 	    print("player fell over at x =", self.back.position[0])
-	    # pygame.quit()
-	    # self.fallen = True
+
 	    self.game_over = True
 	    self.fall_penalty = -10000
-	    # self.calculate_reward()
-	    # self.update_values()
+
 	    return True
 
 	def got_up(self,space,arbiter,x):
@@ -228,8 +226,6 @@ class ragdoll:
 	def get_states(self):
 		"""gets positions and velocities of each joint in Rad and Rad/s (Rounded to nearest pstep/ vstep incrament)"""
 
-		# print("Back velocity = ", self.back.velocity[1])
-
 		#get positions/ angles
 		self.rkp = self.rightShin.angle - self.rightThigh.angle
 		self.lkp = self.leftShin.angle - self.leftThigh.angle
@@ -238,15 +234,6 @@ class ragdoll:
 		self.bp = self.back.angle - self.butt.angle 
 		#get height of butt off of ground
 		self.buttHeight = np.floor((self.wY - self.butt.position[1] - 50)/50) #need to translate from pixel value to discrete step
-		# if self.buttHeight > 4:
-		# 	self.buttHeight = 4
-
-		# if self.butt.angle < -1:
-		# 	self.buttAng = -1
-		# if (self.butt.angle > -1) & (self.butt.angle < 1):
-		# 	self.buttAng = 0
-		# if self.butt.angle > 1:
-		# 	self.buttAng = 1
 		
 		#get vels
 		self.rkv = self.rightShin.angular_velocity - self.rightThigh.angular_velocity
@@ -260,10 +247,8 @@ class ragdoll:
 		statevec = np.array([self.rkp,self.lkp,self.rhp,self.lhp,self.bp,self.butt.position[1],self.butt.angle,self.rkv,self.lkv,self.rhv,self.lhv,self.bv,self.backv])
 		
 		self.laststate = self.statevec
-		self.statevec = torch.from_numpy(statevec) #??
-		# print("sv = ", self.statevec)
+		self.statevec = torch.from_numpy(statevec)
 
-		# return(self.statevec)
 		return(self.statevec.float()) #cast to float (is double)
 		
 	def activate_joints(self, rightKneeAction, leftKneeAction, rightHipAction, leftHipAction, backAction):
@@ -279,10 +264,6 @@ class ragdoll:
 		self.leftThigh.apply_force_at_local_point((leftHipAction*self.torqueMult,0),(0,-30))
 		self.back.apply_force_at_local_point((-backAction*self.torqueMult,0),(0,0))
 		self.back.apply_force_at_local_point((backAction*self.torqueMult,0),(0,-30))
-		
-		# actionvec = np.array([rightHipAction,leftKneeAction,rightHipAction,leftHipAction,backAction])
-		# print(actionvec)
-		# self.actionvec = torch.from_numpy(actionvec)
 
 		if self.assist == True:
 			self.back.apply_force_at_local_point((-10000*np.sin(self.back.angle),0),(0,0))
@@ -293,7 +274,6 @@ class ragdoll:
 		'''calculates reward for current trial'''
 
 		torqueFactor = 100*torch.sum(self.actionvec**2)
-		# print("torque factor = ",torqueFactor)
 
 		#shamelessly stolen from MatLab RL tutorial
 		# self.reward = 10*self.butt.velocity[0] - 0.001*self.butt.position[1]**2 - torqueFactor + self.fall_penalty
@@ -331,14 +311,6 @@ class ragdoll:
 			        exit()
 
 		self.calculate_reward()
-
-		# #update history
-		# self.history.add(self.laststate,self.actionvec,self.reward,self.statevec,self.done)
-
-		# #learn if enough samples in history
-		# if len(self.history) > 100: #batch_size = 100
-		# 	experiences = self.history.sample()
-			# self.learn(experiences, self.discountFactor)
 
 		if self.viz:
 			self.screen.fill(self.sky)

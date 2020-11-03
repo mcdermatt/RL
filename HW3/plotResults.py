@@ -9,10 +9,12 @@ def movingAverage(values,window):
 rews = np.load("rewards.npy")
 avg = movingAverage(rews,50)
 
-fig = plt.figure()
+fig = plt.figure(0)
 plt.plot(np.arange(1, len(rews) + 1), rews)
 plt.plot(np.arange(1, len(avg) + 1), avg)
 
-plt.ylabel('Reward')
+plt.ylabel('Rewards')
 plt.xlabel('Episode #')
+
+plt.savefig("rewards.png")
 plt.show()
