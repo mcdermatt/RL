@@ -33,7 +33,7 @@ class ragdoll:
 		self.sky = (32,32,32,255)
 		self.game_over = False
 		self.reward = 0
-		self.runLen = 200
+		self.runLen = 400
 		self.assist = assist
 
 		self.screen = pygame.display.set_mode((self.wX,self.wY))

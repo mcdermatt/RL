@@ -1,3 +1,16 @@
+Dependencies: 
+pytorch 10.2+ 
+cuda enabled graphics card
+python 3
+pymunk
+pygame
+pickle
+collections
+
+
+If computer does not have cuda available:
+add <device = torch.device("cpu")> to the top of file in main.py, agent.py, model.py and replaybuffer.py
+
 Run interactive QWOP game with:
 <python simpleHuman.py>
 
