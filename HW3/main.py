@@ -23,7 +23,7 @@ torch.set_default_tensor_type('torch.cuda.FloatTensor')
 #init agent (state size, action size)
 agent = Agent(13,5)
 
-trials = 10000 #repeat simulation <trials> times
+trials = 100000 #repeat simulation <trials> times
 rews = numpy.zeros(trials)
 agent_loss = numpy.zeros(trials)
 critic_loss = numpy.zeros(trials)
@@ -32,7 +32,7 @@ for trial in range(trials):
 	print("Trial #: ", trial)
 
 	#resets simulation
-	body = ragdoll(viz = True, arms = False, playBackSpeed = 20, assist = False)
+	body = ragdoll(viz = True, arms = False, playBackSpeed = 10, assist = False)
 	states = body.get_states()
 	states = states.to(device) #send to GPU
 	# while body.fallen == False:

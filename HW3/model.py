@@ -13,7 +13,7 @@ import numpy as np
 # Add Replay Buffer
 
 class Actor(nn.Module): #create actor class and inherit from nn.Module
-	def __init__(self, state_size = 13, action_size = 5, nodes1 = 2048, nodes2 = 1024):
+	def __init__(self, state_size = 13, action_size = 5, nodes1 = 1600, nodes2 = 800): #nodes1 = 2048, nodes2 = 1024):
 		super(Actor,self).__init__() #need to run this because init func of nn.Module is not run upon inherit
 
 		#Linear is a simple flat fuly connected
@@ -27,9 +27,9 @@ class Actor(nn.Module): #create actor class and inherit from nn.Module
 		self.bn2 = nn.BatchNorm1d(nodes2)
 
 		#reset params - might be bad??
-		self.fc1.weight.data.uniform_(-1.5e-3, 1.5e-3)
-		self.fc2.weight.data.uniform_(-1.5e-3, 1.5e-3)
-		self.fc3.weight.data.uniform_(-3e-3, 3e-3)
+		# self.fc1.weight.data.uniform_(-1.5e-3, 1.5e-3)
+		# self.fc2.weight.data.uniform_(-1.5e-3, 1.5e-3)
+		# self.fc3.weight.data.uniform_(-3e-3, 3e-3)
 
 	def forward(self, state):
 		x = F.relu(self.bn1(self.fc1(state))) 
@@ -54,7 +54,7 @@ class Actor(nn.Module): #create actor class and inherit from nn.Module
 
 class Critic(nn.Module):
 	"""Critic (Value) Model.""" 
-	def __init__(self, state_size, action_size, fc1_units=2048, fc2_units=1024):
+	def __init__(self, state_size, action_size, fc1_units=1600, fc2_units=800):
 		super(Critic, self).__init__()
 		self.fc1 = nn.Linear(state_size, fc1_units)
 		self.fc2 = nn.Linear(fc1_units, fc2_units)

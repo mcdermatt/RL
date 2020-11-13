@@ -17,15 +17,15 @@ from replayBuffer import ReplayBuffer
 class ragdoll:
 	""" torques (input) = [right knee, left knee, right hip, left hip, back] """
 
-	def __init__(self, viz = True, arms = True, playBackSpeed = 1, assist = False):
+	def __init__(self, viz = True, arms = False, feet = True, playBackSpeed = 1, assist = False):
 
 		# self.wX = 1600
 		# self.wY = 800
-		self.wX = 2000 #1600
-		self.wY = 600
+		self.wX = 2500 #1600
+		self.wY = 800
 		self.startX = self.wX / 4
-		self.dampingCoeff = 2500 # 10000
-		self.torqueMult = 15000 #15000 #50000
+		self.dampingCoeff = 0 #2500
+		self.torqueMult = 25000 #50000
 		self.foreground = (178,102,255,255) #foreground color
 		self.midground = (153,51,255,255) 
 		self.background = (127,0,255,255)
@@ -33,7 +33,7 @@ class ragdoll:
 		self.sky = (32,32,32,255)
 		self.game_over = False
 		self.reward = 0
-		self.runLen = 400
+		self.runLen = 500
 		self.assist = assist
 
 		self.screen = pygame.display.set_mode((self.wX,self.wY))
@@ -59,7 +59,7 @@ class ragdoll:
 
 		#init sim space
 		self.space = pymunk.Space()
-		self.space.gravity = (0.0, 1200.0) #(0.0,900.0)
+		self.space.gravity = (0.0, 900.0) #(0.0,900.0)
 		self.draw_options = pymunk.pygame_util.DrawOptions(self.screen)
 		self.draw_options.flags = pymunk.SpaceDebugDrawOptions.DRAW_SHAPES
 		self.step = 0
@@ -80,34 +80,45 @@ class ragdoll:
 		Box()
 
 		#init body
-		self.kneeMax = 0
+		self.kneeMax = -1
 		self.kneeMin = -2.5
 		self.hipMax = 3
 		self.hipMin = -1
 		self.backMin = -0.25
-		self.backMax = 1
+		self.backMax = 0.25
+		self.kneespring = 0 #50000
 		#add right leg
-		self.rightShin = self.add_limb(self.space, (self.startX,500), color = self.background, friction = 5, mass = 1, elasticity = 0.3)
+		self.rightShin = self.add_limb(self.space, (self.startX,500), color = self.background, friction = 1, mass = 1, elasticity = 0.3)
 		self.rightThigh = self.add_limb(self.space, (self.startX,400), thiccness = 15, color = self.background)
 		self.rightKnee = pymunk.PivotJoint(self.rightShin,self.rightThigh,(self.startX,450))
 		self.rightKneeLimits = pymunk.RotaryLimitJoint(self.rightShin,self.rightThigh,self.kneeMin,self.kneeMax)
-		self.rightKneeDamp = pymunk.DampedRotarySpring(self.rightShin,self.rightThigh,0,0,self.dampingCoeff)
+		self.rightKneeDamp = pymunk.DampedRotarySpring(self.rightShin,self.rightThigh,-1.75,self.kneespring,self.dampingCoeff)
 		self.space.add(self.rightKnee)
 		self.space.add(self.rightKneeLimits)
 		self.space.add(self.rightKneeDamp)
+
+		if feet:
+			self.rightFoot = self.add_limb(self.space,(self.startX,540), length = 15, color = self.background, thiccness = 10)
+			self.rightAnkle = pymunk.PivotJoint(self.rightShin,self.rightFoot,(self.startX,555))
+			self.rightAnkleLimits = pymunk.RotaryLimitJoint(self.rightFoot, self.rightShin,-3,-1)
+			self.rightAnkleSpring = pymunk.DampedRotarySpring(self.rightFoot,self.rightShin, 2, 300000,10000)
+			self.space.add(self.rightAnkle)
+			self.space.add(self.rightAnkleLimits)
+			self.space.add(self.rightAnkleSpring)
+
 		#add left leg
-		self.leftShin = self.add_limb(self.space, (self.startX,500), color = self.midground, friction = 5, mass = 1, elasticity = 0.3)
+		self.leftShin = self.add_limb(self.space, (self.startX,500), color = self.midground, friction = 1, mass = 1, elasticity = 0.3)
 		self.leftThigh = self.add_limb(self.space, (self.startX,400), thiccness = 15, color = self.midground)
 		self.leftKnee = pymunk.PivotJoint(self.leftShin,self.leftThigh,(self.startX,450))
 		self.leftKneeLimits = pymunk.RotaryLimitJoint(self.leftShin,self.leftThigh,self.kneeMin,self.kneeMax)
-		self.leftKneeDamp = pymunk.DampedRotarySpring(self.leftShin,self.leftThigh,0,0,self.dampingCoeff)
+		self.leftKneeDamp = pymunk.DampedRotarySpring(self.leftShin,self.leftThigh,-1.75,self.kneespring,self.dampingCoeff)
 		self.space.add(self.leftKneeDamp)
 		self.space.add(self.leftKnee)
 		self.space.add(self.leftKneeLimits)
 		#add butt & hips
-		# buttOffset = 10 
-		buttOffset = 0
-		self.butt = self.add_limb(self.space,(self.startX-buttOffset,320), length = 10, thiccness = 17,color = self.midground, COLLTYPE = 3)
+		buttOffset = 10 
+		# buttOffset = 0
+		self.butt = self.add_limb(self.space,(self.startX-buttOffset,320), length = 10,mass = 10, thiccness = 17,color = self.midground, COLLTYPE = 3)
 		self.rightHip = pymunk.PivotJoint(self.rightThigh,self.butt,(self.startX,350))
 		self.rightHipLimits = pymunk.RotaryLimitJoint(self.rightThigh,self.butt,self.hipMin,self.hipMax)
 		self.rightHipDamp = pymunk.DampedRotarySpring(self.rightThigh,self.butt,0,0,self.dampingCoeff)
@@ -123,13 +134,23 @@ class ragdoll:
 		self.noSplits = pymunk.RotaryLimitJoint(self.leftThigh,self.rightThigh,-2,2)
 		self.space.add(self.noSplits)
 		#add back
-		self.back = self.add_limb(self.space,(self.startX,245), mass = 0.2, length = 30, thiccness = 15, color = self.midground, COLLTYPE = 3)# mass = 2
+		self.back = self.add_limb(self.space,(self.startX,245), mass = 2, length = 30, thiccness = 15, color = self.midground, COLLTYPE = 3)# mass = 2
 		self.spine = pymunk.PivotJoint(self.butt,self.back,(self.startX,300))
 		self.spineLimits = pymunk.RotaryLimitJoint(self.butt,self.back,self.backMin,self.backMax)
-		self.spineDamp = pymunk.DampedRotarySpring(self.butt,self.back,0,0,self.dampingCoeff)
+		self.spineDamp = pymunk.DampedRotarySpring(self.butt,self.back,0,100000,self.dampingCoeff)
 		self.space.add(self.spineDamp)
 		self.space.add(self.spine)
 		self.space.add(self.spineLimits)
+		
+		if feet:
+			self.leftFoot = self.add_limb(self.space,(self.startX,540), length = 15, color = self.midground, thiccness = 10)
+			self.leftAnkle = pymunk.PivotJoint(self.leftShin,self.leftFoot,(self.startX,555))
+			self.leftAnkleLimits = pymunk.RotaryLimitJoint(self.leftFoot, self.leftShin,-3,-1)
+			self.leftAnkleSpring = pymunk.DampedRotarySpring(self.leftFoot,self.leftShin, 2, 300000,10000)
+			self.space.add(self.leftAnkle)
+			self.space.add(self.leftAnkleLimits)
+			self.space.add(self.leftAnkleSpring)
+
 		if arms:
 			#add head
 			shoulderHeight = 240
@@ -279,7 +300,11 @@ class ragdoll:
 		# self.reward = 10*self.butt.velocity[0] - 0.001*self.butt.position[1]**2 - torqueFactor + self.fall_penalty
 
 		#fav so far
-		self.reward = 10*self.step + 30*self.butt.position[0] - 0.1*self.butt.position[1]**2 - torqueFactor + self.fall_penalty
+		# self.reward = 100*self.step + 30*self.butt.position[0] - 0.1*self.butt.position[1]**2 - torqueFactor + self.fall_penalty
+		# self.reward = 100*self.step + 30*self.butt.position[0] - 10*self.back.position[1]**2 - torqueFactor + self.fall_penalty
+		# self.reward = 100*self.step + 30*self.butt.position[0] + 10*(600-self.back.position[1])**2 - torqueFactor + self.fall_penalty
+		self.reward = 10*self.butt.position[0] -abs(1000*self.back.angle) -self.back.position[1]**2 - torqueFactor + self.fall_penalty
+
 
 		#balance back
 		# self.reward = -abs(1000*self.back.angle) - torqueFactor #+ self.fall_penalty
@@ -299,7 +324,7 @@ class ragdoll:
 		if self.step > self.runLen: #time over
 			self.game_over = True
 
-		if abs(self.butt.angle) > 2: #doing some cartwheel BS
+		if abs(self.butt.angle) > 3: #doing some cartwheel BS
 			self.game_over = True
 			self.fall_penalty = -10000
 

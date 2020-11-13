@@ -21,8 +21,8 @@ background = (127,0,255,255)
 sky = (32,32,32,255)
 floor = (96,96,96,255)
 
-Arms = True
-# Arms = False
+# Arms = True
+Arms = False
 assist = False
 
 #init pygame
@@ -125,7 +125,7 @@ space.add(leftHipLimits)
 back = add_limb(space,(100,245), mass = 2, length = 30, thiccness = 15, color = midground, COLLTYPE = 3)# filter = 0b01)
 spine = pymunk.PivotJoint(butt,back,(100,300))
 spineLimits = pymunk.RotaryLimitJoint(butt,back,-0.25,1)
-spineDamp = pymunk.DampedRotarySpring(butt,back,0,0,dampingCoeff)
+spineDamp = pymunk.DampedRotarySpring(butt,back,0,500000,dampingCoeff)
 space.add(spineDamp)
 space.add(spine)
 space.add(spineLimits)
@@ -199,9 +199,9 @@ h = space.add_collision_handler(COLLTYPE_BACK, COLLTYPE_GOAL)
 
 while True:
 
-	print(back.angle)
-	
 	# print(back.angle)
+	
+	print(back.position[1])
 
 	leftKneeAng = leftShin.angle - leftThigh.angle
 	rightKneeAng = rightShin.angle - rightThigh.angle
