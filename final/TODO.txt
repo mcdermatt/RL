@@ -21,5 +21,7 @@ looks like scipy-integrate does not play nicely with analytical integration
 		Try to reformulate friction using DiracDelta instead of Heaviside
 
 
+Lambdify vs NumPy / Scipy for performance
+
 
 pretty_print() is not pretty enough

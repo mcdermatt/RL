@@ -1,5 +1,5 @@
 from __future__ import print_function, division
-from sympy import symbols, simplify, trigsimp, Abs, Heaviside, Function, DiracDelta, Dummy
+from sympy import symbols, simplify, trigsimp, Abs, Heaviside, Function, DiracDelta, Dummy, lambdify
 from sympy.physics.mechanics import dynamicsymbols, ReferenceFrame, Point, inertia, RigidBody, KanesMethod
 from sympy.physics.vector import init_vprinting, vlatex
 from IPython.display import Image
@@ -212,9 +212,18 @@ t = Dummy('t') #integrating with respect to t, needs to be dummy instead of symb
 integrated_FV = integrate(forcing_vector,t)
 # print(integrated_FV)
 integrated_MM = integrate(mass_matrix,t)
-print(integrated_MM)
+# print(integrated_MM)
 
-#CHECK OUT DIFFERENT GENERATOR CLASSES- MIGHT BE ABLE TO GET ONE TO WORK WITH HEAVISIDE
+print("testing plugging in vales for integrated FV:")
+# print(integrated_FV.subs(t,5)) #plug in for t = 5
+	#TODO fix- f=substituting in 5 for constants but not as arg for omega1(t), etc.
+print(type(integrated_FV))
+# f = lambdify(t, integrated_FV, "numpy")
+# print(f(t))
+
+
+
+#CHECK OUT DIFFERENT GENERATOR CLASSES- MIGHT BE ABLE TO GET ONE TO WORK WITH DiracDelta
 right_hand_side = generate_ode_function(forcing_vector, coordinates,
                                         speeds, constants,
                                         mass_matrix=mass_matrix,
@@ -222,7 +231,7 @@ right_hand_side = generate_ode_function(forcing_vector, coordinates,
                                         # generator='theano')
 
 #store right_hand_side to dill file so we don't have to go through solving every time
-EOM_file = "full_EOM_func_VISCOUS_DAMPING.txt"
+EOM_file = "full_EOM_func_STICK_SLIP.txt"
 # dill.dump(right_hand_side, open(EOM_file, 'wb'))
 # rhsString = dill.dumps(right_hand_side)
 # print(rhsString)
@@ -278,11 +287,21 @@ frames_per_sec = 60
 final_time = 3
 t = linspace(0.0, final_time, final_time * frames_per_sec)
 
-#TODO - try alternate integration
+#NEW METHOD:
+#TODO - try alternate substitution without using odeint
+#plug in numerical constants
+# subbed_MM = integrated_MM.subs([(constants[0],numerical_constants[0]),(constants[1],numerical_constants[1])]) #test- doesn't crash anything
+replacements = [(constants[i],numerical_constants[i]) for i in range(len(constants))]
+subbed_MM = integrated_MM.subs(replacements)
+# print(subbed_MM)
+subbed_FV = integrated_FV.subs(replacements)
+# print(subbed_FV)
 
+
+
+#OLD METHOD:
 #create variable to store trajectories of states as func of time
-y = odeint(right_hand_side, x0, t, args=(numerical_specified, numerical_constants))
-# y = solve_ivp(right_hand_side, t, x0)
+# y = odeint(right_hand_side, x0, t, args=(numerical_specified, numerical_constants))
 
 #visualization ----------------------------------------------------------------
 #print(pydy.shapes.__all__)
