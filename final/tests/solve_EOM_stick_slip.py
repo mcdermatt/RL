@@ -1,5 +1,5 @@
 from __future__ import print_function, division
-from sympy import symbols, simplify, trigsimp, Abs, Heaviside
+from sympy import symbols, simplify, trigsimp, Abs, Heaviside, Function
 from sympy.physics.mechanics import dynamicsymbols, ReferenceFrame, Point, inertia, RigidBody, KanesMethod
 from sympy.physics.vector import init_vprinting, vlatex
 from IPython.display import Image
@@ -13,6 +13,7 @@ import pydy.viz
 from pydy.viz.visualization_frame import VisualizationFrame
 from pydy.viz.scene import Scene
 import cloudpickle
+from sympy import integrate
 import os
 import inspect
 
@@ -124,7 +125,8 @@ print("finished Kinetics")
 
 #FRICTION---------------------------------------------------------------
 
-j0_fs, j1_fs, j2_fs, j0_fk, j1_fk, j2_fk, j2_f = symbols('j0_fs, j1_fs, j2_fs, j0_fk, j1_fk, j2_fk,j2_f')
+j0_fs, j1_fs, j2_fs, j0_fk, j1_fk, j2_fk = symbols('j0_fs, j1_fs, j2_fs, j0_fk, j1_fk, j2_fk')
+j2_f = symbols('j2_f', cls = Function)
 
 #2nd arg in Heaviside defines H(0)
 j0_friction = (j0_frame, omega0 * j0_fk * j0_frame.y)
@@ -170,6 +172,7 @@ print("finished mass_matrix")
 #forcing_vector = trigsimp(kane.forcing_full)
 forcing_vector = kane.forcing_full
 # pretty_print(forcing_vector)
+print(forcing_vector)
 print("finished forcing_vector")
 
 print("finished Equations of Motion")
@@ -195,7 +198,16 @@ constants = [j0_length,
 			 j2_fk]
 specified = [j0_torque, j1_torque, j2_torque]
 
-#CHECK OUT DIFFERENT GENERATOR CLASSES- MIGHT BE ABLE TO GET ONE TO WORK WITH PIECEWISE
+#EVERYTHING IS WORKING UP TO THIS POINT
+# ( ͡° ͜ʖ ͡°) 	 
+# 		( ͡° ͜ʖ ͡°)	
+# 			( ͡° ͜ʖ ͡°)
+
+t = symbols('t')
+integrated = integrate(forcing_vector, t)
+print(integrated)
+
+#CHECK OUT DIFFERENT GENERATOR CLASSES- MIGHT BE ABLE TO GET ONE TO WORK WITH HEAVISIDE
 right_hand_side = generate_ode_function(forcing_vector, coordinates,
                                         speeds, constants,
                                         mass_matrix=mass_matrix,
@@ -258,6 +270,8 @@ args = {'constants': numerical_constants,
 frames_per_sec = 60
 final_time = 3
 t = linspace(0.0, final_time, final_time * frames_per_sec)
+
+#TODO - try alternate integration
 
 #create variable to store trajectories of states as func of time
 y = odeint(right_hand_side, x0, t, args=(numerical_specified, numerical_constants))

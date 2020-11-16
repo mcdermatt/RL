@@ -4,7 +4,6 @@ from scipy.integrate import odeint
 from sympy import *
 from sympy.physics.vector import init_vprinting, vlatex
 from sympy.printing.pretty.pretty import pretty_print
-
 import numpy as np
 
 init_vprinting(use_latex='mathjax', pretty_print=True)
@@ -35,10 +34,11 @@ omega, fs, fk = symbols('omega, fs, fk')
 # pretty_print(soln)
 
 # a = f(x).diff(x,x) - 2*f(x).diff(x) + f(x)
-a = f(x).diff(x)
-# a = 1-Heaviside(Abs(x),0)
+# a = f(x).diff(x)
+a = 1-Heaviside(Abs(x),0)
+# a = 1-np.heaviside(x,0)
 # a = 1-Heaviside(Abs(omega),0)* fs + Heaviside(Abs(omega),0)* fk
-pretty_print(a)
+# pretty_print(a)
 # soln = integrate(a,(x,0,4)) #get definite integral with 2nd argument
 soln = integrate(a) #leave blank for indef
 pretty_print(soln)
@@ -46,9 +46,9 @@ pretty_print(soln)
 # pretty_print(soln.doit())
 
 # rhs = generate_ode_function(soln) #needs to be in kanes form to work
-
-t = np.linspace(1,10,10)
-ans = odeint(soln, 0 ,t)
+#
+# t = np.linspace(1,10,10)
+# ans = odeint(soln, 0 ,t)
 
 # -------------------------
 # fs, fk, omega,x = symbols('fs, fk, omega,x')
