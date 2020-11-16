@@ -1,5 +1,5 @@
 from __future__ import print_function, division
-from sympy import symbols, simplify, trigsimp
+from sympy import symbols, simplify, trigsimp, Abs, Heaviside
 from sympy.physics.mechanics import dynamicsymbols, ReferenceFrame, Point, inertia, RigidBody, KanesMethod
 from sympy.physics.vector import init_vprinting, vlatex
 from IPython.display import Image
@@ -12,8 +12,6 @@ from pydy.viz.shapes import Cylinder, Sphere
 import pydy.viz
 from pydy.viz.visualization_frame import VisualizationFrame
 from pydy.viz.scene import Scene
-# import dill
-# import pickle
 import cloudpickle
 import os
 import inspect
@@ -126,12 +124,18 @@ print("finished Kinetics")
 
 #FRICTION---------------------------------------------------------------
 
-j0_damp, j1_damp, j2_damp = symbols('lam0, lam1, lam2')
+j0_fs, j1_fs, j2_fs, j0_fk, j1_fk, j2_fk, j2_f = symbols('j0_fs, j1_fs, j2_fs, j0_fk, j1_fk, j2_fk,j2_f')
 
-j0_friction = (j0_frame, omega0 * -j0_damp * j0_frame.y)
-j1_friction = (j1_frame, omega1 * -j1_damp * j1_frame.z)
-j2_friction = (j2_frame, omega2 * -j2_damp * j2_frame.z)
+#2nd arg in Heaviside defines H(0)
+j0_friction = (j0_frame, omega0 * j0_fk * j0_frame.y)
+j1_friction = (j1_frame, omega1 * j1_fk * j1_frame.z)
 
+j2_f = (1-Heaviside(Abs(omega2),0)* j2_fs + Heaviside(Abs(omega2),0)* j2_fk)
+print(j2_f)
+j2_friction = (j2_frame, j2_f*j2_frame.z) 
+
+
+# j2_friction = (j2_frame, (1-Heaviside(Abs(omega2),0)* j2_fs * j2_frame.z + Heaviside(Abs(omega2),0)* j2_fk * j2_frame.z))
 
 #Equations of Motion----------------------------------------------------
 coordinates = [theta0, theta1, theta2]
@@ -183,17 +187,20 @@ constants = [j0_length,
 			 j2_mass,
 			 j2_inertia,
 			 g,
-			 j0_damp,
-			 j1_damp,
-			 j2_damp]
+			 j0_fs,
+			 j1_fs,
+			 j2_fs,
+			 j0_fk,
+			 j1_fk,
+			 j2_fk]
 specified = [j0_torque, j1_torque, j2_torque]
 
-#generate ODE function that numerically evaluates the RHS of first order diffeq 
-#odeint is ODE integrator
+#CHECK OUT DIFFERENT GENERATOR CLASSES- MIGHT BE ABLE TO GET ONE TO WORK WITH PIECEWISE
 right_hand_side = generate_ode_function(forcing_vector, coordinates,
                                         speeds, constants,
                                         mass_matrix=mass_matrix,
                                         specifieds=specified)
+                                        # generator='theano')
 
 #store right_hand_side to dill file so we don't have to go through solving every time
 EOM_file = "full_EOM_func_VISCOUS_DAMPING.txt"
@@ -235,10 +242,13 @@ numerical_constants = array([0.05,  # j0_length [m]
                              0.158,  # j2_com_length [m]
                              2.259,  # j2_mass [kg]
                              0.001,  # NOT USED j2_inertia [kg*m^2]
-                             9.81,
+                             9.81, # acceleration due to gravity [m/s^2]
+                             0.25,
+                             0.25,
+                             0.25,
                              0.15,
                              0.15,
-                             0.15,],  # acceleration due to gravity [m/s^2]
+                             0.15],  
                             ) 
 
 #set joint torques to zero for first simulation

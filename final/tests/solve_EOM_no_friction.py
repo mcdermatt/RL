@@ -124,14 +124,6 @@ l2_torque = (j2_frame, j2_torque * j2_frame.z)
 
 print("finished Kinetics")
 
-#FRICTION---------------------------------------------------------------
-
-j0_damp, j1_damp, j2_damp = symbols('lam0, lam1, lam2')
-
-j0_friction = (j0_frame, omega0 * -j0_damp * j0_frame.y)
-j1_friction = (j1_frame, omega1 * -j1_damp * j1_frame.z)
-j2_friction = (j2_frame, omega2 * -j2_damp * j2_frame.z)
-
 
 #Equations of Motion----------------------------------------------------
 coordinates = [theta0, theta1, theta2]
@@ -142,9 +134,6 @@ kane = KanesMethod(inertial_frame, coordinates, speeds, kinematical_differential
 loads = [j0_grav_force, 
 		 j1_grav_force, 
 		 j2_grav_force,
-		 j0_friction,
-		 j1_friction,
-		 j2_friction,
 		 l0_torque,
 		 l1_torque,
 		 l2_torque]
@@ -182,10 +171,7 @@ constants = [j0_length,
 			 j2_com_length,
 			 j2_mass,
 			 j2_inertia,
-			 g,
-			 j0_damp,
-			 j1_damp,
-			 j2_damp]
+			 g]
 specified = [j0_torque, j1_torque, j2_torque]
 
 #generate ODE function that numerically evaluates the RHS of first order diffeq 
@@ -196,7 +182,7 @@ right_hand_side = generate_ode_function(forcing_vector, coordinates,
                                         specifieds=specified)
 
 #store right_hand_side to dill file so we don't have to go through solving every time
-EOM_file = "full_EOM_func_VISCOUS_DAMPING.txt"
+EOM_file = "full_EOM_func_no_friction.txt"
 # dill.dump(right_hand_side, open(EOM_file, 'wb'))
 # rhsString = dill.dumps(right_hand_side)
 # print(rhsString)
@@ -235,10 +221,7 @@ numerical_constants = array([0.05,  # j0_length [m]
                              0.158,  # j2_com_length [m]
                              2.259,  # j2_mass [kg]
                              0.001,  # NOT USED j2_inertia [kg*m^2]
-                             9.81,
-                             0.15,
-                             0.15,
-                             0.15,],  # acceleration due to gravity [m/s^2]
+                             9.81],  # acceleration due to gravity [m/s^2]
                             ) 
 
 #set joint torques to zero for first simulation

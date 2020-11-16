@@ -16,9 +16,9 @@ numerical_constants = np.array([0.05,  # j0_length [m]
                              2.259,  # j2_mass [kg]
                              0.001,  # NOT USED j2_inertia [kg*m^2]
                              9.81, # acceleration due to gravity [m/s^2]
-                             -0.15, #j0 damp
-                             -0.15, #j1 damp
-                             -0.15,], #j2 damp
+                             0.15, #j0 damp
+                             0.15, #j1 damp
+                             0.15], #j2 damp
                             ) 
 
 numerical_specified = np.zeros(3)
