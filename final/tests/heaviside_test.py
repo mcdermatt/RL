@@ -29,26 +29,30 @@ omega, fs, fk = symbols('omega, fs, fk')
 
 # diffeq = Eq(f(x).diff(x,x) - 2*f(x).diff(x) + f(x), sin(x))
 # pretty_print(diffeq)
-#
 # soln = integrate(diffeq)
 # pretty_print(soln)
 
-# a = f(x).diff(x,x) - 2*f(x).diff(x) + f(x)
-# a = f(x).diff(x)
-a = 1-Heaviside(Abs(x),0)
-# a = 1-np.heaviside(x,0)
-# a = 1-Heaviside(Abs(omega),0)* fs + Heaviside(Abs(omega),0)* fk
-# pretty_print(a)
-# soln = integrate(a,(x,0,4)) #get definite integral with 2nd argument
-soln = integrate(a) #leave blank for indef
-pretty_print(soln)
+a = 1-Heaviside(x,0)
+soln = integrate(a,(x,-1,4)) #get definite integral with 2nd argument
+# soln = integrate(a) #leave blank for indef
+# pretty_print(soln)
 
-# pretty_print(soln.doit())
+# TODO Figure out dummy variables
+# integrate(Heaviside(x)) -> x*Heaviside(x) CORRECT
+# integrate(1 - Heaviside(x)) ->-x*Heaviside(x) + x ALSO CORRECT
+# 
+# integrate()
+
+b = DiracDelta(x)
+pretty_print(b)
+soln2 = integrate(b,x)
+# soln2 = integrate(b,(x,-1,2)) # if interval includes x=0 -> 1, else 0 
+print(soln2)
+
+# t = np.linspace(0,10,11)
+# soln2(t)
 
 # rhs = generate_ode_function(soln) #needs to be in kanes form to work
-#
-# t = np.linspace(1,10,10)
-# ans = odeint(soln, 0 ,t)
 
 # -------------------------
 # fs, fk, omega,x = symbols('fs, fk, omega,x')

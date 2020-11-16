@@ -1,5 +1,5 @@
 from __future__ import print_function, division
-from sympy import symbols, simplify, trigsimp, Abs, Heaviside, Function
+from sympy import symbols, simplify, trigsimp, Abs, Heaviside, Function, DiracDelta, Dummy
 from sympy.physics.mechanics import dynamicsymbols, ReferenceFrame, Point, inertia, RigidBody, KanesMethod
 from sympy.physics.vector import init_vprinting, vlatex
 from IPython.display import Image
@@ -16,6 +16,7 @@ import cloudpickle
 from sympy import integrate
 import os
 import inspect
+from scipy.integrate import solve_ivp
 
 #this file is used to generate a serialized function that can be used to estimate
 # next states given current states
@@ -132,10 +133,11 @@ j2_f = symbols('j2_f', cls = Function)
 j0_friction = (j0_frame, omega0 * j0_fk * j0_frame.y)
 j1_friction = (j1_frame, omega1 * j1_fk * j1_frame.z)
 
-j2_f = (1-Heaviside(Abs(omega2),0)* j2_fs + Heaviside(Abs(omega2),0)* j2_fk)
-pretty_print(j2_f)
-j2_friction = (j2_frame, j2_f*j2_frame.z) 
+# j2_f = (1-Heaviside(Abs(omega2),0)* j2_fs + Heaviside(Abs(omega2),0)* j2_fk) #technically correct but ABS inside Heaviside leads to issues
+# pretty_print(j2_f)
+# j2_friction = (j2_frame, j2_f*j2_frame.z) 
 
+j2_friction = (j2_frame, (DiracDelta(omega2)*j2_fs + (1 - DiracDelta(omega2)*j2_fk))*j2_frame.z)
 
 # j2_friction = (j2_frame, (1-Heaviside(Abs(omega2),0)* j2_fs * j2_frame.z + Heaviside(Abs(omega2),0)* j2_fk * j2_frame.z))
 
@@ -172,7 +174,7 @@ print("finished mass_matrix")
 #forcing_vector = trigsimp(kane.forcing_full)
 forcing_vector = kane.forcing_full
 # pretty_print(forcing_vector)
-print(forcing_vector)
+# print(forcing_vector)
 print("finished forcing_vector")
 
 print("finished Equations of Motion")
@@ -203,9 +205,14 @@ specified = [j0_torque, j1_torque, j2_torque]
 # 		( ͡° ͜ʖ ͡°)	
 # 			( ͡° ͜ʖ ͡°)
 
-t = symbols('t')
-integrated = integrate(forcing_vector, t)
-print(integrated)
+#weird stuff happens when you try and integrate a np matrix -> need to use sympy matrix
+
+t = Dummy('t') #integrating with respect to t, needs to be dummy instead of symbol
+
+integrated_FV = integrate(forcing_vector,t)
+# print(integrated_FV)
+integrated_MM = integrate(mass_matrix,t)
+print(integrated_MM)
 
 #CHECK OUT DIFFERENT GENERATOR CLASSES- MIGHT BE ABLE TO GET ONE TO WORK WITH HEAVISIDE
 right_hand_side = generate_ode_function(forcing_vector, coordinates,
@@ -275,6 +282,7 @@ t = linspace(0.0, final_time, final_time * frames_per_sec)
 
 #create variable to store trajectories of states as func of time
 y = odeint(right_hand_side, x0, t, args=(numerical_specified, numerical_constants))
+# y = solve_ivp(right_hand_side, t, x0)
 
 #visualization ----------------------------------------------------------------
 #print(pydy.shapes.__all__)

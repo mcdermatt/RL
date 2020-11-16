@@ -166,6 +166,7 @@ print("finished mass_matrix")
 #forcing_vector = trigsimp(kane.forcing_full)
 forcing_vector = kane.forcing_full
 # pretty_print(forcing_vector)
+print(forcing_vector)
 print("finished forcing_vector")
 
 print("finished Equations of Motion")
