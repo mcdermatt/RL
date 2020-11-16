@@ -1,5 +1,5 @@
 from __future__ import print_function, division
-from sympy import symbols, simplify, trigsimp, Abs, Heaviside, Function, DiracDelta, Dummy, lambdify
+from sympy import symbols, simplify, trigsimp, Abs, Heaviside, Function, DiracDelta, Dummy, lambdify, Eq
 from sympy.physics.mechanics import dynamicsymbols, ReferenceFrame, Point, inertia, RigidBody, KanesMethod
 from sympy.physics.vector import init_vprinting, vlatex
 from IPython.display import Image
@@ -32,6 +32,8 @@ j2_frame = ReferenceFrame('J2')
 
 #declare dynamic symbols for the three joints
 theta0, theta1, theta2 = dynamicsymbols('theta0, theta1, theta2')
+# theta0, theta1, theta2 = symbols('theta0, theta1, theta2', cls = Function) #test making these vars funcs so they can be called in initial conds
+
 
 #orient frames
 j0_frame.orient(inertial_frame,'Axis',(theta0, inertial_frame.y))
@@ -217,11 +219,6 @@ integrated_MM = integrate(mass_matrix,t)
 print("testing plugging in vales for integrated FV:")
 # print(integrated_FV.subs(t,5)) #plug in for t = 5
 	#TODO fix- f=substituting in 5 for constants but not as arg for omega1(t), etc.
-print(type(integrated_FV))
-# f = lambdify(t, integrated_FV, "numpy")
-# print(f(t))
-
-
 
 #CHECK OUT DIFFERENT GENERATOR CLASSES- MIGHT BE ABLE TO GET ONE TO WORK WITH DiracDelta
 right_hand_side = generate_ode_function(forcing_vector, coordinates,
@@ -288,7 +285,6 @@ final_time = 3
 t = linspace(0.0, final_time, final_time * frames_per_sec)
 
 #NEW METHOD:
-#TODO - try alternate substitution without using odeint
 #plug in numerical constants
 # subbed_MM = integrated_MM.subs([(constants[0],numerical_constants[0]),(constants[1],numerical_constants[1])]) #test- doesn't crash anything
 replacements = [(constants[i],numerical_constants[i]) for i in range(len(constants))]
@@ -297,7 +293,14 @@ subbed_MM = integrated_MM.subs(replacements)
 subbed_FV = integrated_FV.subs(replacements)
 # print(subbed_FV)
 
+#TODO specify initial conditions
+# ics = {theta0(0):x0[0], theta0(t).diff(t,1).subs(t,0):x0[3], 
+# 		theta1(0):x0[1], theta1(t).diff(t,1).subs(t,0):x0[4],
+# 		theta2(0):x0[2], theta0(t).diff(t,1).subs(t,0):x0[5]}
 
+diffeq = Eq(subbed_MM, -subbed_FV) #, ics = ics)
+#TODO figure out why this is showing up as a bool
+print(type(diffeq)) # showing up as a bool????? 
 
 #OLD METHOD:
 #create variable to store trajectories of states as func of time

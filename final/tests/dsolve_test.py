@@ -13,7 +13,11 @@ x = symbols('x')
 f,g = symbols('f, g', cls = Function)
 
 diffeq = Eq(f(x).diff(x,x) - 2*f(x).diff(x) + f(x), sin(x))
-# pretty_print(diffeq)
+pretty_print(diffeq)
 
-soln = dsolve(diffeq,f(x))
+#initial conditions
+ics = {f(0) : 5, f(x).diff(x, 1).subs(x,0) : 3}
+# ics = {}
+
+soln = dsolve(diffeq,f(x), ics = ics)
 pretty_print(soln)
