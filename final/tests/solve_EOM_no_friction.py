@@ -151,7 +151,7 @@ mass_matrix = kane.mass_matrix_full
 # dill.dump(mass_matrix,open(mass_matrix_file, 'wb'))
 
 print("finished mass_matrix")
-#pretty_print(mass_matrix)
+pretty_print(mass_matrix)
 #forcing_vector = trigsimp(kane.forcing_full)
 forcing_vector = kane.forcing_full
 # pretty_print(forcing_vector)

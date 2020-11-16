@@ -1,1 +1,12 @@
 Use heaviside func to model stick-slip friction
+	-wrote heaviside func into EOM solver script, scipy ODEint is having trouble handling piecewise funcs
+
+	-might(?) try using the Pade Approximant
+
+	-look into alternate forms of sympy codegen - check out Theano
+
+looks like scipy-integrate does not play nicely with analytical integration
+	-going to try using the sympy integration tools - need to learn them first
+
+	-check out scipy.integrate.solve_ivp
+		-have to set up variable like a function(?)

@@ -2,3 +2,10 @@
 Modeling nDOF vibrations:
 https://www.brown.edu/Departments/Engineering/Courses/En4/Notes/vibrations_mdof/vibrations_mdof.htm 
 	5.5.5 - the effects of damping
+
+
+Modeling, Identification, and Compensation of Stick-Slip Friction:
+	https://ieeexplore.ieee.org/document/4084684
+
+	low speed behavior: Striebeck friction
+	high speed behavior: coulomb and viscous friction

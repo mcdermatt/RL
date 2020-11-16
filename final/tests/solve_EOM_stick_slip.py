@@ -131,7 +131,7 @@ j0_friction = (j0_frame, omega0 * j0_fk * j0_frame.y)
 j1_friction = (j1_frame, omega1 * j1_fk * j1_frame.z)
 
 j2_f = (1-Heaviside(Abs(omega2),0)* j2_fs + Heaviside(Abs(omega2),0)* j2_fk)
-print(j2_f)
+pretty_print(j2_f)
 j2_friction = (j2_frame, j2_f*j2_frame.z) 
 
 
@@ -214,9 +214,9 @@ EOM_file = "full_EOM_func_VISCOUS_DAMPING.txt"
 cloudpickle.dump(right_hand_side,open(EOM_file, 'wb'))
 
 print("generated right_hand_side")
-print(right_hand_side)
+# print(right_hand_side)
 
-print(os.path.abspath(inspect.getfile(right_hand_side)))
+# print(os.path.abspath(inspect.getfile(right_hand_side)))
 
 #right_hand_side is a FUNCTION
 #initial values for system
