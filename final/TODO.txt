@@ -1,0 +1,1 @@
+Use heaviside func to model stick-slip friction

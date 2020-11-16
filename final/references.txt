@@ -1,0 +1,4 @@
+
+Modeling nDOF vibrations:
+https://www.brown.edu/Departments/Engineering/Courses/En4/Notes/vibrations_mdof/vibrations_mdof.htm 
+	5.5.5 - the effects of damping
