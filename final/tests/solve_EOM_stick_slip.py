@@ -17,6 +17,7 @@ from sympy import integrate
 import os
 import inspect
 from scipy.integrate import solve_ivp
+from sympy.functions.elementary.complexes import sign
 
 #this file is used to generate a serialized function that can be used to estimate
 # next states given current states
@@ -140,10 +141,13 @@ j2_f = symbols('j2_f', cls = Function)
 # j2_friction = (j2_frame, (DiracDelta(omega2)*j2_fs + (1 - DiracDelta(omega2)*j2_fk))*j2_frame.z) #also correct(?) but incompatible with scipy
 
 #must approximate dirac delta function using modified sigmoid
-# j0_friction = (j0_frame, omega0 * -j0_fs * j0_frame.y)
-j0_friction = (j0_frame, -((1/(1+(100*e**(-10000*(omega0**2)))))*j0_fs + (1 - (1/(1+(100*e**(-10000*(omega0**2))))))*j0_fk)* omega0 * j0_frame.y)
-j1_friction = (j1_frame, -((1/(1+(100*e**(-10000*(omega1**2)))))*j1_fk + (1 - (1/(1+(100*e**(-10000*(omega1**2))))))*j1_fs)* omega1 * j1_frame.z)
-j2_friction = (j2_frame, -((1/(1+(100*e**(-10000*(omega2**2)))))*j2_fk + (1 - (1/(1+(100*e**(-10000*(omega2**2))))))*j2_fs)* omega2 * j2_frame.z)
+#Abs and sign function do not work with both symbolic and numerical integration
+# sign(omega) = (-1 + (2/(1+(e**(-10000*(omega))))))
+j0_friction = (j0_frame, -((1/(1+(100*e**(-10000*(omega0**2)))))*j0_fs + (1 - (1/(1+(100*e**(-10000*(omega0**2))))))*j0_fk)* (-1 + (2/(1+(e**(-10000*(omega0)))))) * j0_frame.y)
+j1_friction = (j1_frame, -((1/(1+(100*e**(-10000*(omega1**2)))))*j1_fk + (1 - (1/(1+(100*e**(-10000*(omega1**2))))))*j1_fs)* (-1 + (2/(1+(e**(-10000*(omega1)))))) * j1_frame.z)
+j2_friction = (j2_frame, -((1/(1+(100*e**(-10000*(omega2**2)))))*j2_fk + (1 - (1/(1+(100*e**(-10000*(omega2**2))))))*j2_fs)* (-1 + (2/(1+(e**(-10000*(omega2)))))) * j2_frame.z)
+
+print(j0_friction)
 
 #Equations of Motion----------------------------------------------------
 coordinates = [theta0, theta1, theta2]
@@ -271,12 +275,12 @@ numerical_constants = array([0.05,  # j0_length [m]
                              2.259,  # j2_mass [kg]
                              0.001,  # NOT USED j2_inertia [kg*m^2]
                              9.81, # acceleration due to gravity [m/s^2]
-                             50,
-                             50,
-                             50,  # f2_s: was 0.25
-                             0.1,
-                             0.1,
-                             0.1], # f2_k: was 0.15
+                             1,
+                             1,
+                             1,  # f2_s: was 0.25
+                             0.5,
+                             0.5,
+                             0.5], # f2_k: was 0.15
                             ) 
 
 #set joint torques to zero for first simulation
