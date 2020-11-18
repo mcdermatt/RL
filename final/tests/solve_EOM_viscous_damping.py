@@ -217,8 +217,8 @@ print(os.path.abspath(inspect.getfile(right_hand_side)))
 x0 = zeros(6)
 #initial pos
 # x0[0] = deg2rad(30)
-x0[1] = deg2rad(120)
-# x0[2] = deg2rad(90)
+x0[1] = deg2rad(30)
+x0[2] = deg2rad(90)
 
 #initial vel
 # x0[3] = deg2rad(180)
@@ -237,9 +237,9 @@ numerical_constants = array([0.05,  # j0_length [m]
                              2.259,  # j2_mass [kg]
                              0.001,  # NOT USED j2_inertia [kg*m^2]
                              9.81,
-                             0.15,
-                             0.15,
-                             0.15,],  # acceleration due to gravity [m/s^2]
+                             0.1,
+                             0.1,
+                             0.1,],  # acceleration due to gravity [m/s^2]
                             ) 
 
 #set joint torques to zero for first simulation

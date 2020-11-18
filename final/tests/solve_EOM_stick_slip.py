@@ -1,10 +1,10 @@
 from __future__ import print_function, division
-from sympy import symbols, simplify, trigsimp, Abs, Heaviside, Function, DiracDelta, Dummy, lambdify, Eq
+from sympy import symbols, simplify, trigsimp, Abs, Heaviside, Function, DiracDelta, Dummy, lambdify, Eq, E
 from sympy.physics.mechanics import dynamicsymbols, ReferenceFrame, Point, inertia, RigidBody, KanesMethod
 from sympy.physics.vector import init_vprinting, vlatex
 from IPython.display import Image
 from sympy.printing.pretty.pretty import pretty_print
-from numpy import deg2rad, rad2deg, array, zeros, linspace
+from numpy import deg2rad, rad2deg, array, zeros, linspace, e
 from scipy.integrate import odeint
 from pydy.codegen.ode_function_generators import generate_ode_function
 import matplotlib.pyplot as plt
@@ -132,22 +132,25 @@ j0_fs, j1_fs, j2_fs, j0_fk, j1_fk, j2_fk = symbols('j0_fs, j1_fs, j2_fs, j0_fk, 
 j2_f = symbols('j2_f', cls = Function)
 
 #2nd arg in Heaviside defines H(0)
-j0_friction = (j0_frame, omega0 * j0_fk * j0_frame.y)
-j1_friction = (j1_frame, omega1 * j1_fk * j1_frame.z)
-
+# j2_friction = (j2_frame, (1-Heaviside(Abs(omega2),0)* j2_fs * j2_frame.z + Heaviside(Abs(omega2),0)* j2_fk * j2_frame.z))
 # j2_f = (1-Heaviside(Abs(omega2),0)* j2_fs + Heaviside(Abs(omega2),0)* j2_fk) #technically correct but ABS inside Heaviside leads to issues
 # pretty_print(j2_f)
 # j2_friction = (j2_frame, j2_f*j2_frame.z) 
 
-j2_friction = (j2_frame, (DiracDelta(omega2)*j2_fs + (1 - DiracDelta(omega2)*j2_fk))*j2_frame.z)
+# j2_friction = (j2_frame, (DiracDelta(omega2)*j2_fs + (1 - DiracDelta(omega2)*j2_fk))*j2_frame.z) #also correct(?) but incompatible with scipy
 
-# j2_friction = (j2_frame, (1-Heaviside(Abs(omega2),0)* j2_fs * j2_frame.z + Heaviside(Abs(omega2),0)* j2_fk * j2_frame.z))
+#must approximate dirac delta function using modified sigmoid
+# j0_friction = (j0_frame, omega0 * -j0_fs * j0_frame.y)
+j0_friction = (j0_frame, -((1/(1+(100*e**(-10000*(omega0**2)))))*j0_fs + (1 - (1/(1+(100*e**(-10000*(omega0**2))))))*j0_fk)* omega0 * j0_frame.y)
+j1_friction = (j1_frame, -((1/(1+(100*e**(-10000*(omega1**2)))))*j1_fk + (1 - (1/(1+(100*e**(-10000*(omega1**2))))))*j1_fs)* omega1 * j1_frame.z)
+j2_friction = (j2_frame, -((1/(1+(100*e**(-10000*(omega2**2)))))*j2_fk + (1 - (1/(1+(100*e**(-10000*(omega2**2))))))*j2_fs)* omega2 * j2_frame.z)
 
 #Equations of Motion----------------------------------------------------
 coordinates = [theta0, theta1, theta2]
 speeds = [omega0, omega1, omega2]
 
-kane = KanesMethod(inertial_frame, coordinates, speeds, kinematical_differential_equations) #, frictions)
+kane = KanesMethod(inertial_frame, coordinates, speeds, kinematical_differential_equations)
+# print(kane.kindiffdict())
 
 loads = [j0_grav_force, 
 		 j1_grav_force, 
@@ -248,8 +251,8 @@ print("generated right_hand_side")
 x0 = zeros(6)
 #initial pos
 # x0[0] = deg2rad(30)
-x0[1] = deg2rad(120)
-# x0[2] = deg2rad(90)
+x0[1] = deg2rad(30)
+x0[2] = deg2rad(90)
 
 #initial vel
 # x0[3] = deg2rad(180)
@@ -268,12 +271,12 @@ numerical_constants = array([0.05,  # j0_length [m]
                              2.259,  # j2_mass [kg]
                              0.001,  # NOT USED j2_inertia [kg*m^2]
                              9.81, # acceleration due to gravity [m/s^2]
-                             0.25,
-                             0.25,
-                             0.25,
-                             0.15,
-                             0.15,
-                             0.15],  
+                             50,
+                             50,
+                             50,  # f2_s: was 0.25
+                             0.1,
+                             0.1,
+                             0.1], # f2_k: was 0.15
                             ) 
 
 #set joint torques to zero for first simulation
@@ -300,11 +303,11 @@ subbed_FV = integrated_FV.subs(replacements)
 
 diffeq = Eq(subbed_MM, -subbed_FV) #, ics = ics)
 #TODO figure out why this is showing up as a bool
-print(type(diffeq)) # showing up as a bool????? 
+# print(type(diffeq)) # showing up as a bool????? 
 
 #OLD METHOD:
 #create variable to store trajectories of states as func of time
-# y = odeint(right_hand_side, x0, t, args=(numerical_specified, numerical_constants))
+y = odeint(right_hand_side, x0, t, args=(numerical_specified, numerical_constants))
 
 #visualization ----------------------------------------------------------------
 #print(pydy.shapes.__all__)

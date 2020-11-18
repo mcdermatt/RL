@@ -202,8 +202,8 @@ print(os.path.abspath(inspect.getfile(right_hand_side)))
 x0 = zeros(6)
 #initial pos
 # x0[0] = deg2rad(30)
-x0[1] = deg2rad(120)
-# x0[2] = deg2rad(90)
+x0[1] = deg2rad(30)
+x0[2] = deg2rad(90)
 
 #initial vel
 # x0[3] = deg2rad(180)
