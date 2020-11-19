@@ -143,7 +143,7 @@ j2_f = symbols('j2_f', cls = Function)
 #must approximate dirac delta function using modified sigmoid
 #Abs and sign function do not work with both symbolic and numerical integration
 # sign(omega) = (-1 + (2/(1+(e**(-10000*(omega))))))
-j0_friction = (j0_frame, -((1/(1+(100*e**(-10000*(omega0**2)))))*j0_fs + (1 - (1/(1+(100*e**(-10000*(omega0**2))))))*j0_fk)* (-1 + (2/(1+(e**(-10000*(omega0)))))) * j0_frame.y)
+j0_friction = (j0_frame, -((1/(1+(100*e**(-10000*(omega0**2)))))*j0_fk + (1 - (1/(1+(100*e**(-10000*(omega0**2))))))*j0_fs)* (-1 + (2/(1+(e**(-10000*(omega0)))))) * j0_frame.y)
 j1_friction = (j1_frame, -((1/(1+(100*e**(-10000*(omega1**2)))))*j1_fk + (1 - (1/(1+(100*e**(-10000*(omega1**2))))))*j1_fs)* (-1 + (2/(1+(e**(-10000*(omega1)))))) * j1_frame.z)
 j2_friction = (j2_frame, -((1/(1+(100*e**(-10000*(omega2**2)))))*j2_fk + (1 - (1/(1+(100*e**(-10000*(omega2**2))))))*j2_fs)* (-1 + (2/(1+(e**(-10000*(omega2)))))) * j2_frame.z)
 
