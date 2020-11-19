@@ -23,12 +23,12 @@ numSteps = 11
 steps = np.linspace(0,runLen,numSteps)
 sp.x0 = np.array([0,30,90,0,0,0])
 
-for t in range(runLen):
+for _ in range(runLen):
 
-	sp.dt = 1
+	sp.dt = 0.1
 	nextStates = sp.predict()[1]
 	sp.x0 = nextStates
-	print(nextStates)
+	print(nextStates[:3])
 	#get elbow position
 	xElb = ( 0.5 * np.sin(nextStates[0]*(np.pi/180))*np.sin(nextStates[1]*(np.pi/180)))
 	yElb = ( 0.5 * np.cos((nextStates[1]*(np.pi/180)))) 
