@@ -3,7 +3,8 @@ from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 from statePredictor import statePredictor
 from time import sleep
-#TODO- break down into calculation and playback loops, don't do both at once
+
+#calcualtes and plays back trajectory
 
 sp = statePredictor()
 fig = plt.figure()
@@ -30,7 +31,7 @@ for _ in range(runLen):
 	# sp.dt = t
 	nextStates = sp.predict(x0 = x0, dt = 0.05)[1]
 	x0 = nextStates
-	print(nextStates[:3])
+	# print(nextStates[:3])
 
 
 	#debug, uncomment when done
