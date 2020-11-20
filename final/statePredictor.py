@@ -34,25 +34,33 @@ class statePredictor:
 	rhs = cloudpickle.load(open("full_EOM_func_COMBINED_FRICTION_MODEL_WITH_ENDPOINT_FORCES.txt", 'rb'))
 
 
-	def __init__(self,numerical_constants = numerical_constants, numerical_specified = numerical_specified, args = args, rhs = rhs):
+	# def __init__(self,numerical_constants = numerical_constants, numerical_specified = numerical_specified, args = args, rhs = rhs):
 		
-		self.numerical_constants = numerical_constants
-		self.numerical_specified = numerical_specified
-		self.args = args
-		self.rhs = rhs
-		self.dt = 1
+	# 	self.numerical_constants = numerical_constants
+	# 	self.numerical_specified = numerical_specified
+	# 	self.args = args
+	# 	self.rhs = rhs
+	# 	self.dt = 1
 
-	def predict(self):
-		numerical_constants = self.numerical_constants
-		numerical_specified = self.numerical_specified
-		x0 = self.x0
-		rhs = self.rhs
-		dt = self.dt
-		# frames_per_sec = 100
-		# final_time = 1
-		# t = linspace(0.0, final_time, final_time * frames_per_sec)
+	# def predict(self):
+	# 	numerical_constants = self.numerical_constants
+	# 	numerical_specified = self.numerical_specified
+	# 	x0 = self.x0
+	# 	rhs = self.rhs
+	# 	dt = self.dt
+	# 	# frames_per_sec = 100
+	# 	# final_time = 1
+	# 	# t = linspace(0.0, final_time, final_time * frames_per_sec)
+	# 	t = linspace(0.0,dt,5)
+
+	# 	#predicted trajectroy given no external forces
+	# 	y = odeint(rhs, x0, t, args=(numerical_specified, numerical_constants))
+
+	# 	return(y)
+
+	def predict(self, numerical_constants = numerical_constants, numerical_specified = numerical_specified, x0 = x0, rhs = rhs, dt = 1):
 		t = linspace(0.0,dt,2)
-
+		# print(dt)
 		#predicted trajectroy given no external forces
 		y = odeint(rhs, x0, t, args=(numerical_specified, numerical_constants))
 
