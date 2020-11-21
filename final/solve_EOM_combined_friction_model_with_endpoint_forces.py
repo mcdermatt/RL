@@ -242,9 +242,9 @@ numerical_constants = array([0.05,  # j0_length [m]
                              0.5, #kinetic friction coeffs
                              0.5,
                              0.5,
-                             0.025, #viscous damping coeffs
-                             0.025,
-                             0.025]
+                             0.05, #viscous damping coeffs
+                             0.05,
+                             0.05]
                             ) 
 
 # joint torques and forces xyz on end effector

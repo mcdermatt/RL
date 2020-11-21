@@ -1,3 +1,36 @@
+
+TODO------------------------------------------------
+
+Visualization
+	test old visualization model with newly generated path
+
+	make accurate real time simulation
+
+Performance
+	Don't change up x0 and reevaluate solution vector for each next step if external loads on system don't change 
+		(evaluate next points as y = odeint(...))  
+
+		if you re-evaluate at every point you are literally just doing numerical integration and performace will be horrible
+
+Should I compensate for gravity or not? 
+	It's kinda the perfect external load
+
+	if I don't, do I not have to cancel dynamics? Just flopping the arm around should leave enough of a signature of friction parameters?
+
+		cancelling dynamics could potentailly make things more difficult (when estimating parameters)	
+
+Validation:
+	
+	Determine value function- easier said than done
+
+	Start with just simulated arm
+
+
+
+
+
+DONE-------------------------------------------------
+
 Use heaviside func to model stick-slip friction
 	-wrote heaviside func into EOM solver script, scipy ODEint is having trouble handling piecewise funcs
 
@@ -8,8 +41,6 @@ Use heaviside func to model stick-slip friction
 	-> DiracDelta should be able to do the same thing as Heaviside
 		integral(DiracDelta) = Heaviside
 
-
-
 looks like scipy-integrate does not play nicely with analytical integration
 	-going to try using the sympy integration tools - need to learn them first
 
@@ -19,6 +50,10 @@ looks like scipy-integrate does not play nicely with analytical integration
 	good news! we're getting all the way to line 264 with the step func, so kanes method is working fine
 
 		Try to reformulate friction using DiracDelta instead of Heaviside
+
+
+
+Ice Box-----------------------------------------------
 
 
 Lambdify vs NumPy / Scipy for performance
