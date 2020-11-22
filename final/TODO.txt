@@ -3,6 +3,8 @@ TODO------------------------------------------------
 
 Visualization
 
+	figure out how to use @window.event within class
+
 	make visualization class
 		armV8RenderTestV3 works but is VERY crude
 
@@ -45,6 +47,7 @@ Visualization
 	test old visualization model with newly generated path
 		works with arm roboticArm/humanPoseEstimation/v8rendertest3
 
+	make "viz" class - much cleaner than old code
 
 Use heaviside func to model stick-slip friction
 	-wrote heaviside func into EOM solver script, scipy ODEint is having trouble handling piecewise funcs
