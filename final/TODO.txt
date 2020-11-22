@@ -2,9 +2,16 @@
 TODO------------------------------------------------
 
 Visualization
-	test old visualization model with newly generated path
+
+	make visualization class
+		armV8RenderTestV3 works but is VERY crude
+
+		move around scene with mouse
 
 	make accurate real time simulation
+
+	generate obj files of v9 robot
+
 
 Performance
 	Don't change up x0 and reevaluate solution vector for each next step if external loads on system don't change 
@@ -12,8 +19,9 @@ Performance
 
 		if you re-evaluate at every point you are literally just doing numerical integration and performace will be horrible
 
-Should I compensate for gravity or not? 
-	It's kinda the perfect external load
+Dynamics
+	Should I compensate for gravity or not? 
+		It's kinda the perfect external load
 
 	if I don't, do I not have to cancel dynamics? Just flopping the arm around should leave enough of a signature of friction parameters?
 
@@ -21,7 +29,9 @@ Should I compensate for gravity or not?
 
 Validation:
 	
-	Determine value function- easier said than done
+	Determine value function
+		how long to wait between t = 0 and when endoint error is calculated?
+			instantly stop considering points for error after robot reaches impossibe to reach space
 
 	Start with just simulated arm
 
@@ -30,6 +40,11 @@ Validation:
 
 
 DONE-------------------------------------------------
+
+Visualization
+	test old visualization model with newly generated path
+		works with arm roboticArm/humanPoseEstimation/v8rendertest3
+
 
 Use heaviside func to model stick-slip friction
 	-wrote heaviside func into EOM solver script, scipy ODEint is having trouble handling piecewise funcs
