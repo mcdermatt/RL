@@ -55,6 +55,16 @@ class viz:
 		self.theta = 0
 		self.phi = 0
 
+		#test
+		#TODO generate plot from here
+		self.label = None
+		plotFigPath = "C:/Users/Matt/comp138/final/pathFig.png"
+		plotFig = pyglet.image.load(plotFigPath)
+		self.plotFig = pyglet.sprite.Sprite(img=plotFig)
+		self.plotFig.scale = 0.0375
+		self.plotFig.x = -32
+		self.plotFig.y = 5
+
 	def on_resize(self,width, height):
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
@@ -65,15 +75,24 @@ class viz:
 
 	def on_draw(self):
 		self.window.clear()
-		glClearColor(1,1,1,0.5) #sets background color
+		glClearColor(0.25,0.25,0.25,0.5) #sets background color
 		glViewport(0,0,1280,720)
 		glLoadIdentity()
 		glMatrixMode(GL_PROJECTION)
-		glRotatef(0,0,1,0)
+		# glRotatef(0,0,1,0)
+		
+
 		#new
+		self.plotFig.draw() #draws sprite directly to screen regardless of camera angle
+		if self.label:
+			self.label.draw()
 		glTranslatef(self.dx/20,self.dy/20,0)
 		glRotatef(self.theta/5,0,1,0)
 		glRotatef(self.phi/5,-1,0,0)
+
+		
+
+
 
 		glMatrixMode(GL_MODELVIEW)
 		link0Rot = (180/np.pi)*self.path[self.i,0]
@@ -108,6 +127,7 @@ class viz:
 		self.draw_link1(self.link1, 0, 0, 0,link0Rot, link1Rot)
 		self.draw_link2(self.link2, xElb, yElb, zElb, link0Rot, link1Rot, link2Rot)
 
+
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE)
 		
 		## draw workspace boundary
@@ -119,6 +139,7 @@ class viz:
 		# else:
 		# 		self.rx.draw()
 
+		# self.window.flip()
 		time.sleep(0.01)
 
 	def draw_base(self,link):
@@ -218,6 +239,13 @@ class viz:
 	def update(self, dt):
 		self.on_draw()
 		self.on_resize(1280,720)
+
+		#update text inside label here
+		self.label = pyglet.text.Label('Hello, world',
+                          font_name='Times New Roman',
+                          font_size=12,
+                          x=self.window.width//2, y=self.window.height//2,
+                          anchor_x='center', anchor_y='center',color = (255,255,255,100))
 
 		self.i += 1
 		if self.i == (self.lenPath - 1):
