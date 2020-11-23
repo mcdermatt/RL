@@ -3,8 +3,6 @@ TODO------------------------------------------------
 
 Visualization
 
-	figure out how to use @window.event within class
-
 	make visualization class
 		armV8RenderTestV3 works but is VERY crude
 
@@ -20,6 +18,11 @@ Performance
 		(evaluate next points as y = odeint(...))  
 
 		if you re-evaluate at every point you are literally just doing numerical integration and performace will be horrible
+
+		provide option to take results as one vector or to re-evaluate input at each timestep
+
+		Figure out why statePredictor() is slower when called from MPL_viz_v3.py
+			MUCH faster when using it in termial
 
 Dynamics
 	Should I compensate for gravity or not? 
@@ -37,6 +40,8 @@ Validation:
 
 	Start with just simulated arm
 
+	Get lengths of each arm segment from CAD
+
 
 
 
@@ -48,6 +53,9 @@ Visualization
 		works with arm roboticArm/humanPoseEstimation/v8rendertest3
 
 	make "viz" class - much cleaner than old code
+
+	figure out how to use @window.event within class
+
 
 Use heaviside func to model stick-slip friction
 	-wrote heaviside func into EOM solver script, scipy ODEint is having trouble handling piecewise funcs
@@ -72,6 +80,9 @@ looks like scipy-integrate does not play nicely with analytical integration
 
 
 Ice Box-----------------------------------------------
+	
+	Viz
+		LABEL- Text on window
 
 
 Lambdify vs NumPy / Scipy for performance

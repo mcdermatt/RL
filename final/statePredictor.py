@@ -1,5 +1,5 @@
 import cloudpickle
-from numpy import zeros, array, linspace, deg2rad
+from numpy import zeros, array, linspace, deg2rad, arange
 from scipy.integrate import odeint
 import time
 
@@ -34,13 +34,15 @@ class statePredictor:
 	rhs = cloudpickle.load(open("full_EOM_func_COMBINED_FRICTION_MODEL_WITH_ENDPOINT_FORCES.txt", 'rb'))
 
 
-	# def __init__(self,numerical_constants = numerical_constants, numerical_specified = numerical_specified, args = args, rhs = rhs):
+	def __init__(self,numerical_constants = numerical_constants, numerical_specified = numerical_specified, args = args, rhs = rhs, x0 = x0):
 		
-	# 	self.numerical_constants = numerical_constants
-	# 	self.numerical_specified = numerical_specified
-	# 	self.args = args
-	# 	self.rhs = rhs
-	# 	self.dt = 1
+		self.numerical_constants = numerical_constants
+		self.numerical_specified = numerical_specified
+		self.args = args
+		self.rhs = rhs
+		self.dt = 0.02
+		self.numPts = 150
+		self.x0 = x0
 
 	# def predict(self):
 	# 	numerical_constants = self.numerical_constants
@@ -58,10 +60,14 @@ class statePredictor:
 
 	# 	return(y)
 
-	def predict(self, numerical_constants = numerical_constants, numerical_specified = numerical_specified, x0 = x0, rhs = rhs, dt = 1):
-		t = linspace(0.0,dt,2)
+	def predict(self):
+		"""IMPORTANT- WE ARE NOT DOING NUMERICAL INTEGRATION HERE: 
+			SIMULATING ONLY ONE TIMESTEP 3 SECONDS AWAY WILL BE 100% ACCURATE
+				"""
+		# t = linspace(0.0,dt,2)
+		t = self.dt*arange(self.numPts)
 		# print(dt)
-		#predicted trajectroy given no external forces
-		y = odeint(rhs, x0, t, args=(numerical_specified, numerical_constants))
+		#predicted trajectory given no external forces
+		y = odeint(self.rhs, self.x0, t, args=(self.numerical_specified, self.numerical_constants))
 
 		return(y)

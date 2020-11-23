@@ -5,17 +5,19 @@ from pywavefront import visualization, Wavefront
 import numpy as np
 import time
 from pyglet.window import mouse
-
+from trajPlotter import trajPlotter
 
 class viz:
 	"""Robotic arm visualization class made using OpenGL
 		(path( 3*n numpy array), use_GPU = False)
 	 .start() to run"""
 
-	def __init__(self, path, use_GPU = False):
+	def __init__(self, path,path2, use_GPU = False):
 
 		self.path = path
+		self.path2 = path2
 		self.lenPath = len(path)
+		self.tp = trajPlotter(self.path,self.path2)
 
 		if use_GPU is False:
 			self.window = pyglet.window.Window(width=1280,height=720)
@@ -60,6 +62,8 @@ class viz:
 		self.label = None
 		plotFigPath = "C:/Users/Matt/comp138/final/pathFig.png"
 		plotFig = pyglet.image.load(plotFigPath)
+
+
 		self.plotFig = pyglet.sprite.Sprite(img=plotFig)
 		self.plotFig.scale = 0.0375
 		self.plotFig.x = -32
@@ -88,7 +92,8 @@ class viz:
 			self.label.draw()
 		glTranslatef(self.dx/20,self.dy/20,0)
 		glRotatef(self.theta/5,0,1,0)
-		glRotatef(self.phi/5,-1,0,0)
+		#not sure how important this one is
+		# glRotatef(self.phi/5,-1,0,0)
 
 		
 
@@ -258,8 +263,10 @@ class viz:
 
 if __name__ == "__main__":
 
-	filename = "C:/Users/Matt/comp138/final/path1.npy"
-	path = np.load(filename)
-	viz = viz(path, use_GPU=False)
+	filename1 = "C:/Users/Matt/comp138/final/path_y1.npy"
+	filename2 = "C:/Users/Matt/comp138/final/path_y2.npy"
+	path1 = np.load(filename1)
+	path2 = np.load(filename2)
+	viz = viz(path1, path2, use_GPU=False)
 
 	viz.start()

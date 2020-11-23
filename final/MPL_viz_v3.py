@@ -6,7 +6,8 @@ from time import sleep
 
 #compares trajectory of two arms with different parameters
 
-presolved = True
+presolved = False
+inputForces = False
 dt = 0.02
 
 sp = statePredictor()
@@ -24,8 +25,11 @@ ax.set_zlabel('y')
 base1, = plt.plot([-0.5],[0],[0],'bo', markersize = 8)
 base2, = plt.plot([0.5],[0],[0],'go', markersize = 8)
 
-x01 = np.array([0,np.deg2rad(30),np.deg2rad(90),0,0,0])
-x02 = np.array([0,np.deg2rad(30),np.deg2rad(90),0,0,0])
+# x01 = np.array([0,np.deg2rad(30),np.deg2rad(90),0,0,0])
+# x02 = np.array([0,np.deg2rad(30),np.deg2rad(90),0,0,0])
+
+x0 = np.zeros(6)
+x0[2] = 1
 
 numerical_constants_arm2 = np.array([0.05,  # j0_length [m]
 				 0.01,  # j0_com_length [m]
@@ -43,31 +47,51 @@ numerical_constants_arm2 = np.array([0.05,  # j0_length [m]
 				 1,
 				 1,  
 				 0.75, #kinetic friction coeffs
-				 0.5,
-				 0.25,
+				 1,
+				 1.25,
 				 0.0125, #viscous damping coeffs
 				 0.0125,
 				 0.0125] 
 				) 
-
+#generate solution vectors
 if presolved is False:
 	runLen = 150
-	#generate solution vectors
 	y1 = np.zeros([runLen,3])
 	y2 = np.zeros([runLen,3])
-	for t in range(runLen):
 
-		#arm 1 is "actual" system, arm 2 is where we guess params
-		nextStates1 = sp.predict(x0 = x01, dt = dt)[1]
-		nextStates2 = sp.predict(x0 = x02, dt = dt, numerical_constants = numerical_constants_arm2)[1]
-		x01 = nextStates1
-		x02 = nextStates2
-		y1[t] = nextStates1[:3]
-		y2[t] = nextStates2[:3]
-		# print(nextStates[:3])
-		print("step ", t, " of ", runLen)
+	#go step by step (waiting for input forces)
+	if inputForces:
+		print("doing this one step at a time")
+		for t in range(runLen):
+			#arm 1 is "actual" system, arm 2 is where we guess params
+			nextStates1 = sp.predict(x0 = x01, dt = dt, numPts = 2)[1]
+			nextStates2 = sp.predict(x0 = x02, dt = dt, numPts = 2 , numerical_constants = numerical_constants_arm2)[1]
+			x01 = nextStates1
+			x02 = nextStates2
+			y1[t] = nextStates1[:3]
+			y2[t] = nextStates2[:3]
+			# print(nextStates[:3])
+			print("step ", t, " of ", runLen)
+
+	#generate entire vector at once (only calls odeint once)
+	else:
+		print("generating entire soln vector")
+		sp.x0 = x0
+		print("x01 = ", x0)
+		print("sp.x0 = ", sp.x0)
+		# y1 = sp1.predict(x0 = x01, dt = dt, numPts = runLen)
+		y1 = sp.predict()
+		print("y1 done")
+		print(y1)
+		# sp.x0 = x0
+		sp.numerical_constants = numerical_constants_arm2
+		# y2 = sp2.predict(x0 = x02, dt = dt, numPts = runLen, numerical_constants = numerical_constants_arm2)
+		y2 = sp.predict()
+		print("y2 done")
 	np.save("path_y1", y1)
 	np.save("path_y2", y2)
+
+#path already generated
 else:
 	y1 = np.load("path_y1.npy")
 	y2 = np.load("path_y2.npy")

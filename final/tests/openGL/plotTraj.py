@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib
 import matplotlib.patches as mpatches
 
+#test script to generate plot from two path files and save fig
+
 font = {'family' : 'normal',
         'weight' : 'bold',
         'size'   : 14}
