@@ -29,16 +29,16 @@ class viz:
 		self.window.push_handlers(self.keys)
 		self.window.push_handlers(self.on_mouse_drag)
 
-		self.base = Wavefront('base.obj')
-		self.link0 = Wavefront('l0.obj')
-		self.link1 = Wavefront('l1.obj')
-		self.link2 = Wavefront('l2andl3Dummy.obj')
-		greenCheck = pyglet.image.load('greenCheck.png')
+		self.base = Wavefront('assets/base.obj')
+		self.link0 = Wavefront('assets/l0.obj')
+		self.link1 = Wavefront('assets/l1.obj')
+		self.link2 = Wavefront('assets/l2andl3Dummy.obj')
+		greenCheck = pyglet.image.load('assets/greenCheck.png')
 		self.gc = pyglet.sprite.Sprite(img=greenCheck)
 		self.gc.scale = 0.01
 		self.gc.x = -10
 		self.gc.y = 12
-		redX = pyglet.image.load('redX.png')
+		redX = pyglet.image.load('assets/redX.png')
 		self.rx = pyglet.sprite.Sprite(img=redX)
 		self.rx.scale = 0.005
 		self.rx.x = -10
@@ -60,7 +60,7 @@ class viz:
 		#test
 		#TODO generate plot from here
 		self.label = None
-		plotFigPath = "C:/Users/Matt/comp138/final/pathFig.png"
+		plotFigPath = "pathFig.png"
 		plotFig = pyglet.image.load(plotFigPath)
 
 
@@ -68,6 +68,8 @@ class viz:
 		self.plotFig.scale = 0.0375
 		self.plotFig.x = -32
 		self.plotFig.y = 5
+
+		self.spf = 1/60 #seconds per frame
 
 	def on_resize(self,width, height):
 		glMatrixMode(GL_PROJECTION)
@@ -257,7 +259,8 @@ class viz:
 			self.i = 0 #loop
 
 	def start(self):
-		pyglet.clock.schedule(self.update)
+		# pyglet.clock.schedule(self.update)
+		pyglet.clock.schedule_interval(self.update, self.spf)
 		pyglet.app.run()
 
 
