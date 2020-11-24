@@ -3,14 +3,17 @@ TODO------------------------------------------------
 
 Visualization
 
-	make visualization class
-		armV8RenderTestV3 works but is VERY crude
+	visualize comparison of two arms?
+		superimpose second ghost arm?
+			make both arms transparent??
 
-		move around scene with mouse
+	clean up plot of joint angles
+		stretch to width of screen?
 
-	make accurate real time simulation
+	ground plane?
 
 	generate obj files of v9 robot
+		Export two versions of each link- one with normal texture and one transparent
 
 
 Performance
@@ -56,6 +59,14 @@ Visualization
 
 	figure out how to use @window.event within class
 
+	make visualization class
+		armV8RenderTestV3 works but is VERY crude
+
+	display chart of trajecctories in background
+
+	move around scene with mouse
+
+	make accurate real time simulation
 
 Use heaviside func to model stick-slip friction
 	-wrote heaviside func into EOM solver script, scipy ODEint is having trouble handling piecewise funcs
