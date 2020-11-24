@@ -1,9 +1,10 @@
-from viz import viz
+from viz2 import viz
 from statePredictor import statePredictor
 import numpy as np 
 
 
 class compare:
+	"""usd to call viz based on different friction parameters of two models"""
 
 	x0 = np.array([0,0.5,1.5,0,0,0])
 	rf = np.array([1,1,1,0.5,0.5,0.5,0.025,0.025,0.025])
@@ -54,7 +55,8 @@ class compare:
 
 if __name__ == "__main__":
 
-	ef = np.array([.5,.5,.5,0.75,0.75,0.75,0.125,0.125,0.125])
+	rf = np.array([1,1,1,0.5,0.5,0.5,0.025,0.025,0.025])
+	ef = np.array([1,1,1,0.5,2  ,0.5,0.025,0.025,0.025])
 
 	c = compare(estFric = ef)
 	c.render()

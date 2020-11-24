@@ -20,15 +20,15 @@ class trajPlotter():
 		t = np.arange(len(path1))
 
 		plt.xlabel('time')
-		plt.ylabel('theta')
+		plt.ylabel('theta (rad)')
 
 		fig = plt.figure()
 		# ax1 = plt.axes(frameon=False)
-		ax1 = fig.add_subplot(frameon = False)
+		ax1 = fig.add_subplot(frameon = True)
 		ax1.set_ylim([-2*np.pi,2*np.pi])
 		ax1.axes.get_xaxis().set_visible(False)
 		ax1.set_ylabel("theta")
-		fig.patch.set_facecolor((.25,.25,.25,0.0))
+		fig.patch.set_facecolor((.25,.25,.25,0.5))
 
 
 		j0_patch = mpatches.Patch(color='red', label='Joint 0')
@@ -44,5 +44,9 @@ class trajPlotter():
 		plt.plot(t,path2[:,1], 'g-')
 		plt.plot(t,path2[:,2], 'b-')
 
-		plt.savefig("C:/Users/Matt/comp138/final/pathFig.png", transparent = True)
+		plt.savefig("C:/Users/Matt/comp138/final/pathFig.png", transparent = True, facecolor = (0.875,0.875,0.875))
 		# plt.show()
+
+if __name__ == "__main__":
+
+	tp = trajPlotter()

@@ -1,0 +1,16 @@
+What I have done so far:
+
+	Solved closed form analytical equations of motion for arm with dry friction and viscous damping
+		
+		This means I specify initial joint angles, angular velocities, the 9 friction parameters 
+		(static friction, kinetic friction and viscous damping) and a timestep and the model will output 
+		the new joint positions an velocities at that time
+
+	Made visualization in openGL to compare estimated friction parameters to "ground truth" parameters
+
+
+Questions:
+
+
+
+Next Steps:

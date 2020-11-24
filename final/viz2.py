@@ -17,7 +17,7 @@ class viz:
 		self.pathA = pathA
 		self.pathB = pathB
 		self.lenPath = len(pathA)
-		self.tp = trajPlotter(self.pathA,self.pathB)
+		self.tp = trajPlotter(self.pathB,self.pathA)
 
 		if use_GPU is False:
 			self.window = pyglet.window.Window(width=1280,height=720)
@@ -43,6 +43,9 @@ class viz:
 		self.rx.scale = 0.005
 		self.rx.x = -10
 		self.rx.y = 12
+		grid = pyglet.image.load('assets/grid.png')
+		self.grid = pyglet.sprite.Sprite(img = grid)
+		self.grid.scale = 0.05
 
 		self.l1 = 6.5
 		self.l2 = 6.5
@@ -85,27 +88,48 @@ class viz:
 
 	def on_draw(self):
 		self.window.clear()
-		glClearColor(0.25,0.25,0.25,0.5) #sets background color
+		# glClearColor(50/255,168/255,82/255,1) #sets background color
+		glClearColor(1,1,1,1)
 		glViewport(0,0,1280,720)
 		glLoadIdentity()
 		glMatrixMode(GL_PROJECTION)
 		# glRotatef(0,0,1,0)
 		
-
-		#new
+		#plot figure
+		glTranslatef(0,0,-10)
 		self.plotFig.draw() #draws sprite directly to screen regardless of camera angle
-		if self.label:
-			self.label.draw()
+		glTranslatef(0,0,10)
+
+		# move and rotate camera with mouse dragging
 		glTranslatef(self.dx/20,self.dy/20,0)
-		glRotatef(self.theta/5,0,1,0)
-		#not sure how important this one is
-		# glRotatef(self.phi/5,-1,0,0)
+		glRotatef(self.theta/5,0,1,0) #turn camera side to side		
+		glRotatef(self.phi/5,-1,0,0) #look camera up/down
+
 
 		
-
-
+		# if self.label:
+		# 	glMatrixMode(GL_PROJECTION)
+		# 	glLoadIdentity()
+		# 	glOrtho(0, self.window.width, 0, self.window.height, -1, 1)
+		# 	glMatrixMode(GL_MODELVIEW)
+		# 	glLoadIdentity()
+		# 	glColor3f(1.0,1.0,1.0)
+		# 	# glTranslatef(0,0,-10)
+		# 	self.label.draw()
+		# 	# glTranslatef(0,0,10)
 
 		glMatrixMode(GL_MODELVIEW)
+
+
+		#draw ground plane
+		glRotatef(90,1,0,0)
+		glTranslatef(-20,-20,20)
+		self.grid.draw()
+		glRotatef(90,-1,0,0)
+		glTranslatef(20,20,-20)
+
+
+
 		link0RotA = (180/np.pi)*self.pathA[self.i,0]
 		link1RotA = (180/np.pi)*self.pathA[self.i,1]
 		link2RotA = (180/np.pi)*self.pathA[self.i,2]
@@ -149,8 +173,8 @@ class viz:
 
 		glEnable(GL_DEPTH_TEST)
 
-		self.draw_base(self.base)
-		self.draw_link0(self.link0, 0, 0, 0, link0RotA)
+		# self.draw_base(self.base)
+		# self.draw_link0(self.link0, 0, 0, 0, link0RotA)
 		# self.draw_link0(self.link0, 0, 0, 0, link0RotB) #TODO- turn up alpha
 		self.draw_link1(self.link1, 0, 0, 0,link0RotA, link1RotA)
 		self.draw_link1(self.link1, 0, 0, 0,link0RotB, link1RotB, wireframe = True) #todo turn up alpha
@@ -160,6 +184,8 @@ class viz:
 
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE)
 		
+
+
 		## draw workspace boundary
 		# self.draw_cube()
 		# #draw green check if EE is inside the workspace
