@@ -54,6 +54,7 @@ class compare:
 
 if __name__ == "__main__":
 
+	#				static   kinetic       damp
 	rf = np.array([1,1,1,0.5,0.5,0.5,0.025,0.05,0.05])
 	ef = np.array([1,1,1,0.5,2  ,0.5,0.025,0.025,0.025])
 

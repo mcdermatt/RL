@@ -100,3 +100,11 @@ Lambdify vs NumPy / Scipy for performance
 
 
 pretty_print() is not pretty enough
+
+
+QUESTIONS----------------------------------------------------
+
+	What to do when getting reward after each trial - no discounting
+		should I redesign so that I pass through multiple points/ longer time so that 
+		more regions can be accounted for in a single trial
+			This would only hurt me, right?
