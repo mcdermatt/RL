@@ -45,7 +45,6 @@ class compare:
 		self.path2 = self.sp.predict()
 		print(self.path2)
 
-	
 
 	def render(self):
 		#shows estimated friction path for now
@@ -55,8 +54,8 @@ class compare:
 
 if __name__ == "__main__":
 
-	rf = np.array([1,1,1,0.5,0.5,0.5,0.025,0.025,0.025])
+	rf = np.array([1,1,1,0.5,0.5,0.5,0.025,0.05,0.05])
 	ef = np.array([1,1,1,0.5,2  ,0.5,0.025,0.025,0.025])
 
-	c = compare(estFric = ef)
+	c = compare(realFric = rf, estFric = ef)
 	c.render()

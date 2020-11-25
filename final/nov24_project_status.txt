@@ -1,16 +1,55 @@
+Matt McDermott
+Final Project Progress as of 11/25/2020
+
 What I have done so far:
 
 	Solved closed form analytical equations of motion for arm with dry friction and viscous damping
 		
 		This means I specify initial joint angles, angular velocities, the 9 friction parameters 
-		(static friction, kinetic friction and viscous damping) and a timestep and the model will output 
-		the new joint positions an velocities at that time
+		(static friction, kinetic friction and viscous damping for each of the 3 joints) and a timestep and the model will output the new joint positions and velocities at that time. This does not rely on numerical integration and is more accurate and fast enough to work in real time. 
 
 	Made visualization in openGL to compare estimated friction parameters to "ground truth" parameters
 
 
 Questions:
 
+	1.) What is the best way to determine a value function?	My current thinking is that each trial will begin with the arm starting at a random combination of positions and velocities for each joint. The the state of the arm 0.25 seconds later will be calculated twice using the EOM- once with the "ground truth" values for friction parameters and once for the estimated values of parameters. Value will be determined as the sum of position errors squared. 
+
+	2.) In this first simulation, the parameters for friction in the "ground truth" arm will be independant of configuration space. In the real world, however, these values are likely dependant on the position of each of the joints of the robot. 
+		
+		For example, because the robot is made of 3d pritned plastic parts, when the arm is fully extended reaching the maximum horizonatal distance from its base there will be a large radial load and a non-negligable amount of strain on the joints leading to an increase in surface contact and thus more dry friction. Additionally, imperfect spur gears may have more friction in some of their teeth than others, meaning that the friction of a joint could vary periodically with position.
+
+		Once I get an RL agent to successfully solve for the 9 values of my configuration independant friction parameter model, can I move directly to the real world robot or would I need to simulate a robot in which friction values vary depending on joint positions?
+
+	3.) I should use an actor-critic network for this probem, correct?
+			Actor:
+				Input- states (3 joint positions, 3 joint velocities, 6 total)
+				Output- friction parameters (3 for each joints, 9 total)
+
+			Critic:
+				Input- states & actions (6 joint states, 9 friction params) 
+				Output- Error
+
+		NN Design: 
+			From what I can tell, because my functions are highly nonlinear both networks shoud have 2 hidden layers. Are there any resources you can point me towards to determine the number of nodes per hidden layer? Is 2000 too many? How to determine step size for my problem? Does 0.0001 seem reasonable?
 
 
 Next Steps:
+	
+	Simplify EOM to reduce calculation time (if needed) 
+
+	Make helper functions to make working with EOM easier to call for agent.
+
+	Implement actor-critic network on configuration independet system.
+
+	Validate results using visualization
+
+	Record movement trajectories on real world robot
+
+	Attempt to identify friction params on real world robot
+		Use the recorded trajectory as the new ground truth trajectory instead of a simulation
+
+	Make heatmap of configuration dependant friction values
+
+	Use identified friction values to make improved feedforward linearization inertia cancellation program
+
