@@ -1,6 +1,16 @@
 
 TODO------------------------------------------------
 
+RL Model
+	
+	Port over from HW 3
+
+	Install Dependencies
+
+	Make sure everything works on CPU FIRST!!
+
+	Figure out how to deal with actor output saturation
+
 Visualization
 
 	visualize comparison of two arms?

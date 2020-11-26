@@ -27,10 +27,10 @@ class Actor(nn.Module): #create actor class and inherit from nn.Module
 		# self.fc3.weight.data.uniform_(-3e-3, 3e-3)
 
 	def forward(self, state):
-		x = F.relu(self.bn1(self.fc1(state))) 
-		x = F.relu(self.bn2(self.fc2(x)))
-		# x = self.m(self.fc1(state)) 
-		# x = self.m(self.fc2(x))
+		# x = F.relu(self.bn1(self.fc1(state))) 
+		# x = F.relu(self.bn2(self.fc2(x)))
+		x = self.m(self.fc1(state)) 
+		x = self.m(self.fc2(x))
 
 		# x = F.relu(self.bn2(self.fc3(x)))
 		# x = self.fc4(x)
@@ -45,7 +45,8 @@ class Actor(nn.Module): #create actor class and inherit from nn.Module
 		# print("action = ", self.m(x))
 		# return(self.m(x))
 		# print("action = ", F.torch.tanh(x)) # tanh -> [-1, 1]
-		return(F.torch.tanh(x))
+		# return(F.torch.tanh(x))
+		return(self.m(x)) #want sigmoid NOT tanh since fric will never be negative
 
 class Critic(nn.Module):
 	"""Critic (Value) Model.""" 

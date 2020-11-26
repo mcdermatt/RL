@@ -5,7 +5,12 @@ import time
 
 class statePredictor:
 
-	numerical_constants = array([0.05,  # j0_length [m]
+	
+
+	# def __init__(self,numerical_constants = numerical_constants, numerical_specified = numerical_specified, args = args, rhs = rhs, x0 = x0):
+	def __init__(self):
+		
+		numerical_constants = array([0.05,  # j0_length [m]
 				 0.01,  # j0_com_length [m]
 				 4.20,  # ( ͡° ͜ʖ ͡°)  j0_mass [kg] 
 				 0.001,  # NOT USED j0_inertia [kg*m^2]
@@ -27,15 +32,13 @@ class statePredictor:
 				 0.025,
 				 0.025] 
 				) 
-	numerical_specified = zeros(6)
-	x0 = zeros(6)
-	args = {'constants': numerical_constants,
+		numerical_specified = zeros(6)
+		x0 = zeros(6)
+		args = {'constants': numerical_constants,
 				'specified': numerical_specified}
-	rhs = cloudpickle.load(open("full_EOM_func_COMBINED_FRICTION_MODEL_WITH_ENDPOINT_FORCES.txt", 'rb'))
+		rhs = cloudpickle.load(open("full_EOM_func_COMBINED_FRICTION_MODEL_WITH_ENDPOINT_FORCES.txt", 'rb'))
 
 
-	def __init__(self,numerical_constants = numerical_constants, numerical_specified = numerical_specified, args = args, rhs = rhs, x0 = x0):
-		
 		self.numerical_constants = numerical_constants
 		self.numerical_specified = numerical_specified
 		self.args = args

@@ -1,5 +1,4 @@
 from model import Actor, Critic
-from ragdoll import ragdoll
 import torch
 from torch.autograd import Variable
 import torch.nn.functional as F
@@ -16,8 +15,8 @@ LR_ACTOR = 0.0001# 0.0001
 LR_CRITIC = 0.001 #0.001
 WEIGHT_DECAY = 0.001
 BUFFER_SIZE = 100000
-BATCH_SIZE =  10 #TODO - figure out if I need this for instant rewards
-discount_factor = 0.99
+BATCH_SIZE =  10 #TODO - figure out if I need this for instant rewards- I think I do
+discount_factor = 0.99 #TODO - figure out if I need this - I think I do not
 TAU = 0.001
 
 class Agent():

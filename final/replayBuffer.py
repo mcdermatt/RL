@@ -6,8 +6,8 @@ import collections
 import random
 
 #courtesy of Shiva Verma at https://github.com/shivaverma/OpenAIGym/blob/master/bipedal-walker/ddpg-torch/ddpg_agent.py
-device = torch.device("cuda:0")
-# device = torch.device("cpu")
+# device = torch.device("cuda:0")
+device = torch.device("cpu")
 
 class ReplayBuffer:
     """Fixed-size buffer to store experience tuples."""
