@@ -8,7 +8,7 @@ import torch.optim as optim
 import numpy as np
 
 class Actor(nn.Module): #create actor class and inherit from nn.Module
-	def __init__(self, state_size = 6, action_size = 9, nodes1 = 1000, nodes2 = 1000):
+	def __init__(self, state_size = 6, action_size = 9, nodes1 = 100, nodes2 = 50): #was 1000, 1000
 		super(Actor,self).__init__() #need to run this because init func of nn.Module is not run upon inherit
 
 		#Linear is a simple flat fuly connected
@@ -50,7 +50,7 @@ class Actor(nn.Module): #create actor class and inherit from nn.Module
 
 class Critic(nn.Module):
 	"""Critic (Value) Model.""" 
-	def __init__(self, state_size = 6, action_size = 9, fc1_units=1000, fc2_units=1000):
+	def __init__(self, state_size = 6, action_size = 9, fc1_units=100, fc2_units=50): #was 1000, 1000
 		super(Critic, self).__init__()
 		self.fc1 = nn.Linear(state_size, fc1_units)
 		self.fc2 = nn.Linear(fc1_units, fc2_units)

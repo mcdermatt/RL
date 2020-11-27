@@ -8,7 +8,7 @@ class OUNoise:
     # theta = 0.4
     # sigma = 0.2
 
-    def __init__(self, size, seed = 1, mu=0., theta=0.8, sigma=0.4):
+    def __init__(self, size, seed = 1, mu=0., theta=0.4, sigma=0.02):
         """Initialize parameters and noise process."""
         self.mu = mu * np.ones(size)
         self.theta = theta

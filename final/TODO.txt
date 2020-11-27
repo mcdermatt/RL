@@ -3,6 +3,10 @@ TODO------------------------------------------------
 
 RL Model
 	
+	Cross Validation- use to see if I am overfitting my model
+
+	Modify RL agent to be configuration independant	
+
 	Port over from HW 3
 
 	Install Dependencies
@@ -10,6 +14,12 @@ RL Model
 	Make sure everything works on CPU FIRST!!
 
 	Figure out how to deal with actor output saturation
+
+	While sim is running- 
+		plot estimated params approaching (hopefully) ground truth params
+
+	Training data - for each trial have some % chance of each joint having ZERO velocity - 
+		(current random variable does not account for that, static friction not being considered)
 
 Visualization
 

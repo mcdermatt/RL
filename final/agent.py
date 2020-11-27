@@ -15,7 +15,7 @@ LR_ACTOR = 0.0001# 0.0001
 LR_CRITIC = 0.001 #0.001
 WEIGHT_DECAY = 0.001
 BUFFER_SIZE = 100000
-BATCH_SIZE =  10 #TODO - figure out if I need this for instant rewards- I think I do
+BATCH_SIZE =  20 #TODO - figure out if I need this for instant rewards- I think I do
 discount_factor = 0.99 #TODO - figure out if I need this - I think I do not
 TAU = 0.001
 
@@ -55,14 +55,13 @@ class Agent():
 		states, actions, rewards, next_states, dones = experiences
 
 		#update critic
-		Qvals = self.critic.forward(states,actions)
-		next_actions = self.actor_target.forward(next_states)
-		next_Q = self.critic_target.forward(next_states, next_actions)
-		Qprime = rewards + discount_factor*next_Q*(1-dones) #ignores result of samples that are at the end
+		Qvals = self.critic(states,actions)
+		# next_actions = self.actor_target(next_states)
+		# next_Q = self.critic_target(next_states, next_actions)
 
 		closs = nn.SmoothL1Loss()
 		# closs = nn.MSELoss() - error too large, this explodes
-		critic_loss = closs(Qvals,Qprime)
+		critic_loss = closs(Qvals,rewards)
 		self.cLossOut = critic_loss.cpu().detach().numpy()
 		self.critic_optimizer.zero_grad()
 		critic_loss.backward()

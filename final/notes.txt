@@ -1,0 +1,14 @@
+11/26
+	Results of running sim:
+	ground truth params: [1, 	 1, 	1, 	   #static
+						  0.5,   0.5,   0.5,   #kinetic
+						  0.025, 0.025, 0.025] #damp
+
+	estimated params:	 [0.06,  0.025,	0.125  #static  WAY OFF
+						  0.06,  0.05,	0.065, #kinetic WAY OFF
+						  0.050, 0.023, 0.049] #damping VERY CLOSE
+	
+	Notes:
+		randomized starting velocities are NEVER zero, estimated static friction vals
+		have no chance of being accurate as of right now
+		
