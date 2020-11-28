@@ -11,13 +11,23 @@ from OUNoise import OUNoise
 device = torch.device("cpu")
 
 
-LR_ACTOR = 0.0001# 0.0001
-LR_CRITIC = 0.001 #0.001
-WEIGHT_DECAY = 0.001
+LR_ACTOR = 0.000001 
+LR_CRITIC = 0.00001 
+#Weight Decay: reduces all weights by a constant- 
+#	helps model from overfilling early
+WEIGHT_DECAY = 0.0001 
 BUFFER_SIZE = 100000
-BATCH_SIZE =  20 #TODO - figure out if I need this for instant rewards- I think I do
+BATCH_SIZE =  128 # (was 100)start with 32, move up/down from there - larger batch size is faster/ more coarse
 discount_factor = 0.99 #TODO - figure out if I need this - I think I do not
-TAU = 0.001
+#TODO - mess around with TAU- should be closer to 1 -> known as POLYAK in OpenAI Spinup
+TAU = 0.005 # was 0.001 #used for moving params between target and local models
+# TAU = 0.99
+
+#OPTIM:
+#	HOLDS CURRENT STATE, UPDATES PARAMS BASED ON CURRENT GRADIENT
+#	test: changed Adam to RAdam
+# 	https://towardsdatascience.com/reinforcement-learning-ddpg-and-td3-for-news-recommendation-d3cddec26011
+
 
 class Agent():
 

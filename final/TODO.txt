@@ -3,6 +3,9 @@ TODO------------------------------------------------
 
 RL Model
 	
+	OU-Noise: 
+		Mu should not be zero- What do I  do?
+
 	Cross Validation- use to see if I am overfitting my model
 
 	Modify RL agent to be configuration independant	

@@ -13,7 +13,7 @@ from agent import Agent
 #generates policy to determine friction parameters of robot
 
 #TODO
-#	Decrease noise as time goes on
+#	SWITCH optim.Adam to Radam
 
 #init CUDA
 if torch.cuda.is_available():
@@ -28,7 +28,7 @@ else:
 
 #TODO optimize dt
 dt = 0.5 #was 0.1
-trials = 3000
+trials = 5000
 
 #init state predictors ---------------------
 #ground truth model
@@ -36,16 +36,17 @@ gt = statePredictor()
 gt.dt = dt #length of time between initial and final states
 gt.numPts = 2 #only care about start and next state, no need for anything else
 gt.x0 = np.zeros(6)
-gt.x0[1] = 1
-gt.x0[2] = 1
+# gt.x0[1] = 1
+# gt.x0[2] = 1
 # gt.numerical_constants[12:] = np.ones(9) * 0.5
+
 #estimated friction model
 ef = statePredictor()
 ef.dt = dt
 ef.numPts = 2
 ef.x0 = np.zeros(6)
-ef.x0[1] = 1
-ef.x0[2] = 1
+# ef.x0[1] = 1
+# ef.x0[2] = 1
 
 #init NN------------------------------------
 #CONFIG DEPENDANT
@@ -60,20 +61,27 @@ critic_loss = np.zeros(trials)
 
 for trial in range(trials):
 
-	#TODO why don't I just not randomize initial states?
 	#get random initial states: start with zero velocities for now
 	# states = np.random.rand(3)
 	# gt.x0[:3] = states 
 	# ef.x0[:3] = states
 
-	#CONFIGURATION DEPENDANT
+	#CONFIGURATION DEPENDANT - might actually help get static consts..
 	states = np.random.randn(6)
-	# states = np.zeros(6)
+	r1 = np.random.rand()
+	r2 = np.random.rand()
+	r3 = np.random.rand()
+	if r1 > 0.9:
+		states[3] = 0 #set starting velocities to zero
+	if r2 > 0.9:
+		states[4] = 0
+	if r3 > 0.9:
+		states[5] = 0
+	#CONFIG INDEPENDANT
+	# states = np.zeros(6) 
 	# states[1] = 1
 	# states[2] = 1
-	r = np.random.rand()
-	if r > 0.9:
-		states[3:] = 0 #set starting velocities to zero
+	
 	gt.x0 = states 
 	ef.x0 = states
 
@@ -89,7 +97,8 @@ for trial in range(trials):
 	with torch.no_grad(): #TODO- verify if I really want this
 		#IMPORTANT- do NOT call forward func, calling actor uses __call__ which automatically
 		#	handles the forward method
-		action = agent.actor(states).cpu().data.numpy()
+		# action = agent.actor(states).cpu().data.numpy() + np.random.randn(9)*0.05*(np.e**(-trial/(trials/10))) #decrease noise over time + agent.noise.sample()
+		action = agent.actor(states).cpu().data.numpy() + np.random.randn(9)*0.1*(np.e**(-trial/(trials/10)))
 		# print(action)
 	agent.actor.train() #unlocks actor
 
@@ -109,9 +118,10 @@ for trial in range(trials):
 
 	#get error from enviornment
 	# reward = -1* np.sum((gtStates[:3] - efStates[:3])**2) #only care about position for now
-	#TODO- log this- make improvements more clear?
-	#test
-	reward = -np.log(np.sum((gtStates[:3] - efStates[:3])**2))
+	#TODO- change this back to pos and vels
+	# reward = -np.log(np.sum((gtStates[:3] - efStates[:3])**2))
+	reward = -np.log(np.sum((gtStates - efStates)**2))
+
 
 	#plug state-action pair into critic network to get error
 
@@ -145,6 +155,16 @@ for trial in range(trials):
 
 		print("reward = ", rews[trial])
 
+
+	if trial % 50 == 0:
+		np.save("rewards", rews)
+		np.save("actor_loss", actor_loss)
+		np.save("critic_loss", critic_loss)
+
+		torch.save(agent.actor.state_dict(), 'checkpoint/checkpoint_actor.pth')
+		torch.save(agent.critic.state_dict(), 'checkpoint/checkpoint_critic.pth')
+		torch.save(agent.actor_target.state_dict(), 'checkpoint/checkpoint_actor_t.pth')
+		torch.save(agent.critic_target.state_dict(), 'checkpoint/checkpoint_critic_t.pth')
 
 np.save("rewards", rews)
 np.save("actor_loss", actor_loss)

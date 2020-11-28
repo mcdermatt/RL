@@ -8,29 +8,49 @@ def movingAverage(values,window):
 
 fig = plt.figure(0)
 
-
-# rews = np.load("critic_loss.npy")
+rews = np.load("critic_loss.npy")
+plt.ylabel('Critic Loss')
 # plt.ylim(ymax = 5e-2, ymin = -5e-2)
 
+avg = movingAverage(rews,10)
 
-# rews = np.load("rewards.npy")
+plt.plot(np.arange(1, len(rews) + 1), rews)
+plt.plot(np.arange(1, len(avg) + 1), avg)
+
+plt.xlabel('Episode #')
+# plt.savefig(filename)
+# plt.show()
+
+fig = plt.figure(1)
+rews = np.load("rewards.npy")
+plt.ylabel('Rewards')
 # plt.ylim(ymax = 1e-5, ymin = -1e-5)
 
-
-rews = np.load("actor_loss.npy")
-plt.ylim(ymax = 5e-2, ymin = -5e-2)
-
-
-avg = movingAverage(rews,50)
+avg = movingAverage(rews,100)
 
 # plt.ylim(ymax = 5e-2, ymin = -5e-2)
 
 plt.plot(np.arange(1, len(rews) + 1), rews)
 plt.plot(np.arange(1, len(avg) + 1), avg)
 
-# plt.ylabel('Rewards')
-# plt.ylabel('Critic Loss')
+plt.xlabel('Episode #')
+
+# plt.savefig(filename)
+# plt.show()
+
+fig = plt.figure(2)
+rews = np.load("actor_loss.npy")
 plt.ylabel('Actor Loss')
+# plt.ylim(ymax = 5e-2, ymin = -5e-2)
+
+
+avg = movingAverage(rews,10)
+
+# plt.ylim(ymax = 5e-2, ymin = -5e-2)
+
+plt.plot(np.arange(1, len(rews) + 1), rews)
+# plt.plot(np.arange(1, len(avg) + 1), avg)
+
 plt.xlabel('Episode #')
 
 # plt.savefig(filename)
