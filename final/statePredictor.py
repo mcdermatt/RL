@@ -2,6 +2,7 @@ import cloudpickle
 from numpy import zeros, array, linspace, deg2rad, arange
 from scipy.integrate import odeint
 import time
+import torch
 
 class statePredictor:
 
@@ -33,7 +34,7 @@ class statePredictor:
 				 0.025] 
 				) 
 		numerical_specified = zeros(6)
-		x0 = zeros(6)
+		x0 = torch.zeros(6)
 		args = {'constants': numerical_constants,
 				'specified': numerical_specified}
 		rhs = cloudpickle.load(open("full_EOM_func_COMBINED_FRICTION_MODEL_WITH_ENDPOINT_FORCES.txt", 'rb'))
@@ -70,6 +71,12 @@ class statePredictor:
 		# t = linspace(0.0,dt,2)
 		t = self.dt*arange(self.numPts)
 		# print(dt)
+		#if x0 is tensor, make it array so it can be read by odeint
+		try:
+			self.x0 = self.x0.cpu().detach().numpy()
+		except:
+			pass
+		# print(type(self.x0))
 		#predicted trajectory given no external forces
 		y = odeint(self.rhs, self.x0, t, args=(self.numerical_specified, self.numerical_constants))
 

@@ -7,27 +7,27 @@ import torch.optim as optim
 from replayBuffer import ReplayBuffer
 from OUNoise import OUNoise
 
-# device = torch.device("cuda:0")
-device = torch.device("cpu")
+device = torch.device("cuda:0")
+# device = torch.device("cpu")
 
 
-LR_ACTOR = 0.000001 
-LR_CRITIC = 0.00001 
+LR_ACTOR = 0.00001 #0.000001 
+LR_CRITIC = 0.0001 #0.00001 
 #Weight Decay: reduces all weights by a constant- 
 #	helps model from overfilling early
-WEIGHT_DECAY = 0.0001 
+WEIGHT_DECAY = 0 # was 0.0001 
 BUFFER_SIZE = 100000
-BATCH_SIZE =  128 # (was 100)start with 32, move up/down from there - larger batch size is faster/ more coarse
+BATCH_SIZE = 32 #temp set for debug #128 # (was 100)start with 32, move up/down from there - larger batch size is faster/ more coarse
 discount_factor = 0.99 #TODO - figure out if I need this - I think I do not
 #TODO - mess around with TAU- should be closer to 1 -> known as POLYAK in OpenAI Spinup
-TAU = 0.005 # was 0.001 #used for moving params between target and local models
-# TAU = 0.99
+# TAU = 0.9 # was 0.005 #used for moving params between target and local models
+TAU = 0.005
 
 #OPTIM:
 #	HOLDS CURRENT STATE, UPDATES PARAMS BASED ON CURRENT GRADIENT
-#	test: changed Adam to RAdam
+#	test: changed Adam to SGD
 # 	https://towardsdatascience.com/reinforcement-learning-ddpg-and-td3-for-news-recommendation-d3cddec26011
-
+#	
 
 class Agent():
 
@@ -40,10 +40,13 @@ class Agent():
 		self.actor = Actor(state_size,action_size).to(device)
 		self.actor_target = Actor(state_size,action_size).to(device)
 		self.actor_optimizer = optim.Adam(self.actor.parameters(), lr = LR_ACTOR)
+		# self.actor_optimizer = optim.SGD(self.actor.parameters(), lr = LR_ACTOR, momentum = 0.1)
+		
 		#init critic
 		self.critic = Critic(state_size,action_size).to(device)
 		self.critic_target = Critic(state_size,action_size).to(device)
 		self.critic_optimizer = optim.Adam(self.critic.parameters(), lr = LR_CRITIC, weight_decay = WEIGHT_DECAY)
+		# self.critic_optimizer = optim.SGD(self.critic.parameters(), lr = LR_CRITIC, weight_decay = WEIGHT_DECAY, momentum = 0.1)
 
 		self.memory = ReplayBuffer(action_size, BUFFER_SIZE, BATCH_SIZE)
 
@@ -69,8 +72,8 @@ class Agent():
 		# next_actions = self.actor_target(next_states)
 		# next_Q = self.critic_target(next_states, next_actions)
 
-		closs = nn.SmoothL1Loss()
-		# closs = nn.MSELoss() - error too large, this explodes
+		# closs = nn.SmoothL1Loss()
+		closs = nn.MSELoss() #- error too large, this explodes
 		critic_loss = closs(Qvals,rewards)
 		self.cLossOut = critic_loss.cpu().detach().numpy()
 		self.critic_optimizer.zero_grad()

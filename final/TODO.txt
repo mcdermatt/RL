@@ -131,3 +131,6 @@ QUESTIONS----------------------------------------------------
 		should I redesign so that I pass through multiple points/ longer time so that 
 		more regions can be accounted for in a single trial
 			This would only hurt me, right?
+
+	Optim
+		Momentum - bad in highy lonlinear systems??

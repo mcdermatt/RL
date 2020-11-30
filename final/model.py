@@ -8,7 +8,7 @@ import torch.optim as optim
 import numpy as np
 
 class Actor(nn.Module): #create actor class and inherit from nn.Module
-	def __init__(self, state_size = 6, action_size = 9, nodes1 = 1000, nodes2 = 500): #was 1000, 1000
+	def __init__(self, state_size = 6, action_size = 9, nodes1 = 5000, nodes2 = 2500): #was 1000, 1000
 		super(Actor,self).__init__() #need to run this because init func of nn.Module is not run upon inherit
 
 		#Linear is a simple flat fuly connected
@@ -48,12 +48,12 @@ class Actor(nn.Module): #create actor class and inherit from nn.Module
 		# return(F.torch.tanh(x))
 		
 		#want sigmoid NOT tanh since fric will never be negative
-		return(self.m(x)*2) #MULTIPLY BY 2 SINCE MAX VALUES OF FRIC CAN BE >> 1
+		return(self.m(x)*10) #MULTIPLY BY 10 SINCE MAX VALUES OF FRIC CAN BE >> 1
 
 
 class Critic(nn.Module):
 	"""Critic (Value) Model.""" 
-	def __init__(self, state_size = 6, action_size = 9, fc1_units=1000, fc2_units=500): #was 1000, 1000
+	def __init__(self, state_size = 6, action_size = 9, fc1_units=5000, fc2_units=2500): #was 1000, 1000
 		super(Critic, self).__init__()
 		self.fc1 = nn.Linear(state_size, fc1_units)
 		self.fc2 = nn.Linear(fc1_units, fc2_units)

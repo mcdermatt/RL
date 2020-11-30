@@ -9,3 +9,9 @@ Modeling, Identification, and Compensation of Stick-Slip Friction:
 
 	low speed behavior: Striebeck friction
 	high speed behavior: coulomb and viscous friction
+
+Equation Identification for Extrapolation and Control:
+	https://www.is.mpg.de/uploads_file/attachment/attachment/494/Martius_EQL_2018.pdf
+
+Sir, this is Wendey's:
+	https://www.quora.com/What-problems-can-occur-when-a-neural-network-has-too-many-neurons
