@@ -15,3 +15,7 @@ Equation Identification for Extrapolation and Control:
 
 Sir, this is Wendey's:
 	https://www.quora.com/What-problems-can-occur-when-a-neural-network-has-too-many-neurons
+
+
+Noisy Networks for Exploration:
+	https://arxiv.org/pdf/1706.10295.pdf

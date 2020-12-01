@@ -132,6 +132,7 @@ print("finished Kinetics")
 j0_fs, j1_fs, j2_fs, j0_fk, j1_fk, j2_fk, j0_damp, j1_damp, j2_damp= symbols('j0_fs, j1_fs, j2_fs, j0_fk, j1_fk, j2_fk, j0_damp, j1_damp, j2_damp')
 j2_f = symbols('j2_f', cls = Function)
 
+#TODO- DAMP PARAM NEEDS FIXING
 #Abs and sign function do not work with both symbolic and numerical integration
 # sign(omega) = (-1 + (2/(1+(e**(-10000*(omega))))))
 j0_friction = (j0_frame, -((1/(1+(100*e**(-10000*(omega0**2)))))*j0_fk + (1 - (1/(1+(100*e**(-10000*(omega0**2))))))*j0_fs + (omega0 * j0_damp))* (-1 + (2/(1+(e**(-10000*(omega0)))))) * j0_frame.y)

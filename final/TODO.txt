@@ -51,6 +51,9 @@ Performance
 			MUCH faster when using it in termial
 
 Dynamics
+
+	Verify sign() function working correctly with respect to static and kinetic friction params in EOM generator
+
 	Should I compensate for gravity or not? 
 		It's kinda the perfect external load
 
@@ -134,3 +137,10 @@ QUESTIONS----------------------------------------------------
 
 	Optim
 		Momentum - bad in highy lonlinear systems??
+
+	Critic Loss converging but reward not improving-
+		Means I am not exploring enough
+			Soln- Add noise to critic loss
+
+		does this just mean that the network can accurately predict the outcome of the policy? As in it just settled on a crap policy?
+			Pretty much this. It descends into abject despair, and at least finds solace in the fact that its worst predictions are reliably coming true.
