@@ -19,7 +19,7 @@ plt.ylabel('Critic Loss')
 # # while lastPt < 5000:
 # 	i = rews[lastPt]
 # 	lastPt += 1
-lastPt = 100000
+lastPt = 500000
 plt.xlim(xmin = 0, xmax = lastPt)
 
 avg = movingAverage(rews,500)

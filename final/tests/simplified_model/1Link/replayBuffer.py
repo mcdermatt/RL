@@ -5,7 +5,6 @@ import torch.optim as optim
 import collections
 import random
 
-#courtesy of Shiva Verma at https://github.com/shivaverma/OpenAIGym/blob/master/bipedal-walker/ddpg-torch/ddpg_agent.py
 device = torch.device("cuda:0")
 # device = torch.device("cpu")
 

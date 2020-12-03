@@ -23,8 +23,8 @@ class Actor(nn.Module): #create actor class and inherit from nn.Module
 		# self.m = nn.Tanh()
 
 		#BatchNorm1D normalizes data to 0 mean and unit variance
-		self.bn1 = nn.BatchNorm1d(nodes1, momentum = None)
-		self.bn2 = nn.BatchNorm1d(nodes2, momentum = None)
+		self.bn1 = nn.BatchNorm1d(nodes1, momentum = 0.1)
+		self.bn2 = nn.BatchNorm1d(nodes2, momentum = 0.1)
 		self.reset_parameters()
 
 	def reset_parameters(self):
@@ -35,12 +35,12 @@ class Actor(nn.Module): #create actor class and inherit from nn.Module
 
 	def forward(self, state):
 		#was this
-		# x = F.relu((self.bn1(self.fc1(state)))) 
-		# x = F.relu((self.bn2(self.fc2(x))))
+		x = F.relu((self.bn1(self.fc1(state)))) 
+		x = F.relu((self.bn2(self.fc2(x))))
 
 		#now this
-		x = self.m((self.bn1(self.fc1(state)))) 
-		x = self.m((self.bn2(self.fc2(x))))
+		# x = self.m((self.bn1(self.fc1(state)))) 
+		# x = self.m((self.bn2(self.fc2(x))))
 		#or
 		# x = F.relu6((self.bn1(self.fc1(state)))) 
 		# x = F.relu6((self.bn2(self.fc2(x))))
@@ -77,8 +77,11 @@ class Critic(nn.Module):
 		# self.q.weight.data.uniform_(-f3, f3)
 		# self.q.weight.data.uniform_(-f3, f3)
 
-		self.bn1 = nn.LayerNorm(s1_units)
-		self.bn2 = nn.LayerNorm(s2_units)
+		#was this
+		# self.bn1 = nn.LayerNorm(s1_units)
+		# self.bn2 = nn.LayerNorm(s2_units)
+		#changed to
+		self.bn1 = nn.BatchNorm1d(s1_units)
 
 	def forward(self, state, action):
 		"""critic network that maps (state, action) pairs -> Q-values."""

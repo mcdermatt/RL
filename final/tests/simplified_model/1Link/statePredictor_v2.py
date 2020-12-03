@@ -19,7 +19,7 @@ class statePredictor:
 				 9.81, # acceleration due to gravity [m/s^2]
 				 0.1, # static friction coeffs  
 				 0.125, #kinetic friction coeffs
-				 0.125] #viscous damping coeffs 
+				 0.05] #viscous damping coeffs 
 				) 
 		numerical_specified = zeros(1)
 		x0 = torch.zeros(2)

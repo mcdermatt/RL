@@ -23,6 +23,9 @@ from agent_v2 import Agent
 #	Map output of RL Agent to realistic range of friction values
 #		none of these friction constants are actually going to be as large as 1 or as small as 0
 #	Record estimates of each value vs ground truth and plot over time
+#	Add momentum??
+
+#CRITIC LOSS IS STAGNATING- need to make sure critic updates once goal is passed and stuff starts getting worse again
 
 #init CUDA
 if torch.cuda.is_available():
@@ -34,7 +37,7 @@ else:
 	torch.set_default_tensor_type('torch.FloatTensor')
 	print("Running on the CPU")
 
-dt = 0.5 # was 0.25
+dt = 0.5 # was 0.5
 trials = 25000
 numSteps = 20
 
@@ -64,7 +67,7 @@ for trial in range(trials):
 	states = torch.randn(2)
 	r1 = np.random.rand()
 	if r1 > 0.9:
-		states[1] = 0 #set starting velocity to zero
+		states[1] = 0 #set starting velocity to zero since random variable will never do so
 	states = states.to(device)
 	# states = states.unsqueeze(0).to(device) #need to unsqueeze to work with batchnorm1d
 	gt.x0 = states 
@@ -95,7 +98,8 @@ for trial in range(trials):
 		gtStates = gtStatesVec[step]
 
 		# reward = -(np.sum(abs(gtStates - efStates)))
-		reward = -abs(gtStates[1]-efStates[1])
+		# reward = -abs(gtStates[0]-efStates[0]) #pos
+		reward = -abs(gtStates[1]-efStates[1]) #vel
 		reward = torch.as_tensor(reward)
 		efStates = torch.as_tensor(efStates)	
 
@@ -104,6 +108,11 @@ for trial in range(trials):
 		else:
 			done = 0
 		done = torch.as_tensor(done)
+
+		# if step*(trial+1) % 10 == 0:
+		# 	is_learning = True
+		# else:
+		# 	is_learning = False
 		agent.step(states.cpu().numpy(), action.cpu().numpy(), reward.cpu().numpy(), efStates.cpu().numpy(), done.cpu().numpy())
 
 		rews[trial*numSteps + step] = reward #.cpu().numpy()
