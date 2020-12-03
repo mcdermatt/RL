@@ -16,6 +16,8 @@ Equation Identification for Extrapolation and Control:
 Sir, this is Wendey's:
 	https://www.quora.com/What-problems-can-occur-when-a-neural-network-has-too-many-neurons
 
-
 Noisy Networks for Exploration:
 	https://arxiv.org/pdf/1706.10295.pdf
+
+Debugging Neural Networks:
+	https://towardsdatascience.com/debugging-neural-networks-with-pytorch-and-w-b-2e20667baf72

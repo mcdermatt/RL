@@ -144,3 +144,11 @@ QUESTIONS----------------------------------------------------
 
 		does this just mean that the network can accurately predict the outcome of the policy? As in it just settled on a crap policy?
 			Pretty much this. It descends into abject despair, and at least finds solace in the fact that its worst predictions are reliably coming true.
+
+	Network is just optimizing the dominant parameter, not really adjusting the others, is this OK?
+
+	Activation functions- which is best?
+		ReLu- bad when inputs are negative/ close to zero- can't learn
+		Sigmoid - bad when inputs are too large
+		relu6- caps relu at 6 to prevent outputs from exploding
+		leaky_relu - relu with slight slope for x<0

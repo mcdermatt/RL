@@ -39,6 +39,7 @@ gt.numPts = 100 #only care about start and next state, no need for anything else
 #simple case- all friction params are zero EXCEPT ONE
 # gt.numerical_constants[9:] = 0
 # gt.numerical_constants[14] = 10 #max out damping
+gt.numerical_constants[-1] = 0.5 #add high damping
 
 #estimated friction model
 ef = statePredictor()

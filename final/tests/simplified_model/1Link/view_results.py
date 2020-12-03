@@ -13,21 +13,21 @@ plt.ylabel('Critic Loss')
 # plt.ylim(ymax = 5e-2, ymin = -5e-2)
 
 #get last nonzero point
-lastPt = 50
-i = 1
+# lastPt = 300
+# i = 1
 # while (i != 0) and (lastPt < 5000):
-while lastPt < 5000:
-	i = rews[lastPt]
-	lastPt += 1
-
+# # while lastPt < 5000:
+# 	i = rews[lastPt]
+# 	lastPt += 1
+lastPt = 100000
 plt.xlim(xmin = 0, xmax = lastPt)
 
-avg = movingAverage(rews,10)
+avg = movingAverage(rews,500)
 
 # plt.plot(np.arange(1, len(rews) + 1), rews)
 plt.plot(np.arange(1, len(avg) + 1), avg)
 
-plt.xlabel('Episode #')
+plt.xlabel('Step #')
 # plt.savefig(filename)
 # plt.show()
 
@@ -36,7 +36,7 @@ rews = np.load("rewards.npy")
 plt.ylabel('Rewards')
 # plt.ylim(ymax = 1e-5, ymin = -1e-5)
 
-avg = movingAverage(rews,10)
+avg = movingAverage(rews,500)
 
 # plt.ylim(ymax = 5e-2, ymin = -5e-2)
 
@@ -44,7 +44,7 @@ avg = movingAverage(rews,10)
 plt.plot(np.arange(1, len(avg) + 1), avg)
 plt.xlim(xmin = 0, xmax = lastPt)
 
-plt.xlabel('Episode #')
+plt.xlabel('Step #')
 
 # plt.savefig(filename)
 # plt.show()
@@ -55,14 +55,14 @@ plt.ylabel('Actor Loss')
 # plt.ylim(ymax = 5e-2, ymin = -5e-2)
 
 
-avg = movingAverage(rews,10)
+avg = movingAverage(rews,500)
 
 # plt.ylim(ymax = 5e-2, ymin = -5e-2)
 
 # plt.plot(np.arange(1, len(rews) + 1), rews)
 plt.plot(np.arange(1, len(avg) + 1), avg)
 
-plt.xlabel('Episode #')
+plt.xlabel('Step #')
 plt.xlim(xmin = 0, xmax = lastPt)
 
 # plt.savefig(filename)

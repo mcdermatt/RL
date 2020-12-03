@@ -11,23 +11,14 @@ device = torch.device("cuda:0")
 # device = torch.device("cpu")
 
 
-LR_ACTOR = 0.001 #0.000001 
-LR_CRITIC = 0.001 #0.00001 
-#Weight Decay: reduces all weights by a constant- 
-#	helps model from overfilling early
-WEIGHT_DECAY = 0 # was 0.0001 
-BUFFER_SIZE = 100000
-BATCH_SIZE = 256 #temp set for debug #128 # (was 100)start with 32, move up/down from there - larger batch size is faster/ more coarse
-discount_factor = 0.99 #TODO - figure out if I need this - I think I do not
-#TODO - mess around with TAU- should be closer to 1 -> known as POLYAK in OpenAI Spinup
-# TAU = 0.9 # was 0.005 #used for moving params between target and local models
+LR_ACTOR = 0.00001# 0.0001
+LR_CRITIC = 0.0001 #0.001
+WEIGHT_DECAY = 0.001
+BUFFER_SIZE = 1000000 #1000000
+BATCH_SIZE = 128 #1024
+discount_factor = 0.99
 TAU = 0.005
-
-#OPTIM:
-#	HOLDS CURRENT STATE, UPDATES PARAMS BASED ON CURRENT GRADIENT
-#	test: changed Adam to SGD
-# 	https://towardsdatascience.com/reinforcement-learning-ddpg-and-td3-for-news-recommendation-d3cddec26011
-#	
+# TAU = 0.99
 
 class Agent():
 
@@ -40,13 +31,10 @@ class Agent():
 		self.actor = Actor(state_size,action_size).to(device)
 		self.actor_target = Actor(state_size,action_size).to(device)
 		self.actor_optimizer = optim.Adam(self.actor.parameters(), lr = LR_ACTOR)
-		# self.actor_optimizer = optim.SGD(self.actor.parameters(), lr = LR_ACTOR, momentum = 0.1)
-		
 		#init critic
 		self.critic = Critic(state_size,action_size).to(device)
 		self.critic_target = Critic(state_size,action_size).to(device)
 		self.critic_optimizer = optim.Adam(self.critic.parameters(), lr = LR_CRITIC, weight_decay = WEIGHT_DECAY)
-		# self.critic_optimizer = optim.SGD(self.critic.parameters(), lr = LR_CRITIC, weight_decay = WEIGHT_DECAY, momentum = 0.1)
 
 		self.memory = ReplayBuffer(action_size, BUFFER_SIZE, BATCH_SIZE)
 
@@ -68,13 +56,15 @@ class Agent():
 		states, actions, rewards, next_states, dones = experiences
 
 		#update critic
-		Qvals = self.critic(states,actions)
-		# next_actions = self.actor_target(next_states)
-		# next_Q = self.critic_target(next_states, next_actions)
+		Qvals = self.critic.forward(states,actions)
+		next_actions = self.actor_target.forward(next_states)
+		next_Q = self.critic_target.forward(next_states, next_actions)
+		Qprime = rewards + discount_factor*next_Q*(1-dones) #ignores result of samples that are at the end
 
-		closs = nn.SmoothL1Loss() #aka l1 loss
-		# closs = nn.MSELoss() # aka l2 loss - error too large, this explodes
-		critic_loss = closs(Qvals,rewards)
+		# closs = nn.SmoothL1Loss()
+		closs = nn.MSELoss() #- error explodes if there are outliars
+		# critic_loss = closs(Qvals,Qprime)
+		critic_loss = closs(Qvals,Qprime)*(1 + 1*torch.randn(1)) #+ 0.1*torch.rand(1) #ADD NOISE TO CRITIC
 		self.cLossOut = critic_loss.cpu().detach().numpy()
 		self.critic_optimizer.zero_grad()
 		critic_loss.backward()

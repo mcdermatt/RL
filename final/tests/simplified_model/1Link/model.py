@@ -8,7 +8,7 @@ import torch.optim as optim
 import numpy as np
 
 class Actor(nn.Module): #create actor class and inherit from nn.Module
-	def __init__(self, state_size = 6, action_size = 9, nodes1 = 50, nodes2 = 25): #was 1000, 1000
+	def __init__(self, state_size = 6, action_size = 9, nodes1 = 10, nodes2 = 5): #was 1000, 1000
 		super(Actor,self).__init__() #need to run this because init func of nn.Module is not run upon inherit
 
 		#Linear is a simple flat fuly connected
@@ -20,80 +20,79 @@ class Actor(nn.Module): #create actor class and inherit from nn.Module
 		self.fc3 = nn.Linear(nodes2, action_size)  #create noisy layer and replace nn.Linear with it
 
 		self.m = nn.Sigmoid()
+		# self.m = nn.Tanh()
 
-		self.bn1 = nn.BatchNorm1d(nodes1)
-		self.bn2 = nn.BatchNorm1d(nodes2)
+		#BatchNorm1D normalizes data to 0 mean and unit variance
+		self.bn1 = nn.BatchNorm1d(nodes1, momentum = None)
+		self.bn2 = nn.BatchNorm1d(nodes2, momentum = None)
 		self.reset_parameters()
 
 	def reset_parameters(self):
 		#reset params - might be bad??
-		self.fc1.weight.data.uniform_(-1.5e-3, 1.5e-3)
+		# self.fc1.weight.data.uniform_(-1.5e-3, 1.5e-3)
 		self.fc2.weight.data.uniform_(-1.5e-3, 1.5e-3)
 		self.fc3.weight.data.uniform_(-3e-3, 3e-3)
 
 	def forward(self, state):
-		# x = F.relu(self.bn1(self.fc1(state))) 
-		# x = F.relu(self.bn2(self.fc2(x)))
-		x = self.m(self.fc1(state)) 
-		x = self.m(self.fc2(x))
+		#was this
+		# x = F.relu((self.bn1(self.fc1(state)))) 
+		# x = F.relu((self.bn2(self.fc2(x))))
 
-		# x = F.relu(self.bn2(self.fc3(x)))
-		# x = self.fc4(x)
+		#now this
+		x = self.m((self.bn1(self.fc1(state)))) 
+		x = self.m((self.bn2(self.fc2(x))))
+		#or
+		# x = F.relu6((self.bn1(self.fc1(state)))) 
+		# x = F.relu6((self.bn2(self.fc2(x))))
+		#or
+		# x = F.leaky_relu((self.bn1(self.fc1(state)))) 
+		# x = F.leaky_relu((self.bn2(self.fc2(x))))
 
 		x = self.fc3(x)
-		# print("x = ", x)
-    	#do not have to make output a certain function
-    	#	need to map values of output layer to [0,1] for each element
-    	#look into nn.BatchNorm1d()
-
-		
-		# print("action = ", self.m(x))
-		# return(self.m(x))
-		# print("action = ", F.torch.tanh(x)) # tanh -> [-1, 1]
-		# return(F.torch.tanh(x))
-		
-		#want sigmoid NOT tanh since fric will never be negative
 		return(self.m(x)) #*10) #MULTIPLY BY 10 SINCE MAX VALUES OF FRIC CAN BE >> 1
 
 
 class Critic(nn.Module):
 	"""Critic (Value) Model.""" 
-	def __init__(self, state_size = 6, action_size = 9, fc1_units=50, fc2_units=25): #was 1000, 1000
+	def __init__(self, state_size = 6, action_size = 9, s1_units=10, s2_units = 5 , a1_units=5): #was 1000, 1000
 		super(Critic, self).__init__()
-		self.fc1 = nn.Linear(state_size, fc1_units)
-		self.fc2 = nn.Linear(fc1_units, fc2_units)
+		self.fc1 = nn.Linear(state_size, s1_units)
+		self.fc2 = nn.Linear(s1_units, s2_units)
 		# self.fc3 = nn.Linear(fc2_units, 1)
-		self.action_value = nn.Linear(action_size,fc2_units)
-		self.q = nn.Linear(fc2_units,1)
+		self.action_value = nn.Linear(action_size,a1_units)
+		self.q = nn.Linear(s2_units,1)
 
-		f1 = 1 / (np.sqrt(self.fc1.weight.data.size()[0]))
-		self.fc1.weight.data.uniform_(-f1, f1)
-		self.fc1.bias.data.uniform_(-f1, f1)
-		f2 = 0.002
-		self.fc2.weight.data.uniform_(-f2, f2)
-		self.fc2.weight.data.uniform_(-f2, f2)
-		f3 = 0.003
-		self.q.weight.data.uniform_(-f3, f3)
-		self.q.weight.data.uniform_(-f3, f3)
+		# self.m = nn.Sigmoid()
+		self.m = nn.Tanh()
 
-		self.bn1 = nn.LayerNorm(fc1_units)
-		self.bn2 = nn.LayerNorm(fc2_units)
+
+		#init weights
+		# f1 = 1 / (np.sqrt(self.fc1.weight.data.size()[0]))
+		# self.fc1.weight.data.uniform_(-f1, f1)
+		# self.fc1.bias.data.uniform_(-f1, f1)
+		# f2 = 0.002
+		# self.fc2.weight.data.uniform_(-f2, f2)
+		# self.fc2.weight.data.uniform_(-f2, f2)
+		# f3 = 0.003
+		# self.q.weight.data.uniform_(-f3, f3)
+		# self.q.weight.data.uniform_(-f3, f3)
+
+		self.bn1 = nn.LayerNorm(s1_units)
+		self.bn2 = nn.LayerNorm(s2_units)
 
 	def forward(self, state, action):
 		"""critic network that maps (state, action) pairs -> Q-values."""
+		#was this
 		state_value = F.relu(self.bn1(self.fc1(state)))
 		state_value = self.fc2(state_value)
-		state_value = self.bn2(state_value)
-
-		action_value = F.relu(self.action_value(action))
+		# action_value = F.relu(self.action_value(action))
+		action_value = self.action_value(action)
 		state_action_value = F.relu(torch.add(state_value, action_value))
-		state_action_value = self.q(state_action_value)
 
-		# x = torch.cat((xs, action), dim=1)
+		#now this
+		# state_value = self.m(self.bn1(self.fc1(state)))
+		# state_value = self.fc2(state_value)
+		# action_value = self.action_value(action)
+		# state_action_value = self.m(torch.add(state_value, action_value))
 
-
-		# x = F.relu(self.fc2(x))
-
-
-		# return self.fc3(x)
-		return state_action_value
+		return self.q(state_action_value)

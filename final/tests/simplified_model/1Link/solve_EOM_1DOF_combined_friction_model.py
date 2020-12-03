@@ -173,7 +173,7 @@ numerical_constants = array([0.164,  # j1_length [m]
                              0.001,  # NOT USED j1_inertia [kg*m^2]
                              9.81, # acceleration due to gravity [m/s^2]
                              0.1,								#static  
-                             0.5, 							#kinetic
+                             0.125, 							#kinetic
                              0.025], 							#damp
                             ) 
 
