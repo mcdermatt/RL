@@ -23,9 +23,15 @@ from agent_v2 import Agent
 #	Map output of RL Agent to realistic range of friction values
 #		none of these friction constants are actually going to be as large as 1 or as small as 0
 #	Record estimates of each value vs ground truth and plot over time
-#	Add momentum??
 
-#CRITIC LOSS IS STAGNATING- need to make sure critic updates once goal is passed and stuff starts getting worse again
+#	Fix DONES -> issue there
+
+#	ISSUE IN CRITIC CLASS -> Should be using torch.cat() NOT torch.add()
+
+# Idea- my only option is to add friction. This means that it is likey that loss of a given state is high becuause
+#		previous states slowed the joint down way too much, so optimal policy will be to make friction zero to catch up
+#		SOLUTION- DON'T GENERATE ALL GROUND TRUTH VALUES AT ONCE- need to do it per trial so current actions are not being punished
+#		because of whatever happened earlier onf
 
 #init CUDA
 if torch.cuda.is_available():
@@ -38,16 +44,17 @@ else:
 	print("Running on the CPU")
 
 dt = 0.5 # was 0.5
-trials = 25000
-numSteps = 20
+trials = 5000
+numSteps = 10 #20
+scale = torch.Tensor([0.5,0.5,0.25]) #max reasonable vals for estimated friction params
+									 # 	hopefully this should prevent vanishing gradients?
 
 #init state predictors ---------------------
 #ground truth model
 gt = statePredictor()
 #Generate all at once- This only works when friction is independant of state
-gt.dt = dt #length of time between initial and final states
-gt.numPts = numSteps+1 #generate full vector at beginning of each trial since params don't change
-# gt.numerical_constants[-1] = 0.5 #add high damping
+gt.dt = dt/numSteps #length of time between initial and final states
+gt.numPts = 2 #generate full vector at beginning of each trial since params don't change
 
 #estimated friction model
 ef = statePredictor()
@@ -63,6 +70,7 @@ actor_loss = np.zeros(trials*numSteps)
 critic_loss = np.zeros(trials*numSteps)
 
 for trial in range(trials):
+	# print("new trial -------")
 	#init starting states
 	states = torch.randn(2)
 	r1 = np.random.rand()
@@ -74,36 +82,34 @@ for trial in range(trials):
 	ef.x0 = states
 	efStates = states #temp
 
-	#get ground truth state vec all at once(?)
-	gtStatesVec = gt.predict()
-
-	for step in range(numSteps-1):
+	for step in range(numSteps):
 		#use actor to determine friction values based on states
 		agent.actor.eval()
 		with torch.no_grad():
-			action = agent.actor(states.unsqueeze(0)) + 0.1*torch.randn(3, device = device)*(np.e**(-trial/(trials/50)))
+			action = agent.actor(states.unsqueeze(0)) #+ 0.1*torch.randn(3, device = device)*(np.e**(-trial/(trials/50)))
 			action = torch.clamp(action, 0,1)
 		agent.actor.train() #unlocks actor
 		
-		a = action #save true action for printing later	
-		# action = action	+ torch.randn(3)*(0.25)*(np.e**(-trial/(trials/10))) #add noise
-		# action = action	+ torch.randn(1)*(0.25)*(np.e**(-trial/(trials/10))) #add noise
 		action[action < 0] = 0 	#zero out negative actions
+		action = action*scale#remap to more reasonable range
+		a = action #save true action for printing later	
 
 		#plug actions chosen by actor network into enviornment
 		ef.numerical_constants[5:] = action.cpu().detach().numpy() #in this case actions are friction parameters
 		# ef.numerical_constants[-1] = action.cpu().detach().numpy() #in this case actions are friction parameters
 		ef.x0 = efStates
+		gt.x0 = efStates
 		efStates = ef.predict()[1]
-		gtStates = gtStatesVec[step]
+		gtStates = gt.predict()[1]
+		# print("efStates = ", efStates, " gtStates = ", gtStates)
 
-		# reward = -(np.sum(abs(gtStates - efStates)))
+		# reward = -(np.sum(abs(gtStates - efStates))) #both
 		# reward = -abs(gtStates[0]-efStates[0]) #pos
 		reward = -abs(gtStates[1]-efStates[1]) #vel
 		reward = torch.as_tensor(reward)
 		efStates = torch.as_tensor(efStates)	
 
-		if step == numSteps:
+		if step == (numSteps-1):
 			done = 1 
 		else:
 			done = 0

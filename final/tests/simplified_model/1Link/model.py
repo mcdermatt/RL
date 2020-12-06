@@ -20,7 +20,6 @@ class Actor(nn.Module): #create actor class and inherit from nn.Module
 		self.fc3 = nn.Linear(nodes2, action_size)  #create noisy layer and replace nn.Linear with it
 
 		self.m = nn.Sigmoid()
-		# self.m = nn.Tanh()
 
 		#BatchNorm1D normalizes data to 0 mean and unit variance
 		self.bn1 = nn.BatchNorm1d(nodes1, momentum = 0.1)
@@ -29,28 +28,29 @@ class Actor(nn.Module): #create actor class and inherit from nn.Module
 
 	def reset_parameters(self):
 		#reset params - might be bad??
-		# self.fc1.weight.data.uniform_(-1.5e-3, 1.5e-3)
+		self.fc1.weight.data.uniform_(-1.5e-3, 1.5e-3)
 		self.fc2.weight.data.uniform_(-1.5e-3, 1.5e-3)
 		self.fc3.weight.data.uniform_(-3e-3, 3e-3)
 
 	def forward(self, state):
 		#was this
-		x = F.relu((self.bn1(self.fc1(state)))) 
-		x = F.relu((self.bn2(self.fc2(x))))
+		# x = F.relu((self.bn1(self.fc1(state)))) 
+		# x = F.relu((self.bn2(self.fc2(x))))
 
 		#now this
-		# x = self.m((self.bn1(self.fc1(state)))) 
-		# x = self.m((self.bn2(self.fc2(x))))
-		#or
-		# x = F.relu6((self.bn1(self.fc1(state)))) 
-		# x = F.relu6((self.bn2(self.fc2(x))))
+		x = F.relu((self.fc1(state))) #batchNorm kills neurons in ReLu when it sends data below 0
+		x = F.relu((self.fc2(x)))
+		# x = F.relu((self.bn1(self.fc1(state))+0.5)) 
+		# x = F.relu((self.bn2(self.fc2(x))+0.5))
+
 		#or
 		# x = F.leaky_relu((self.bn1(self.fc1(state)))) 
 		# x = F.leaky_relu((self.bn2(self.fc2(x))))
 
 		x = self.fc3(x)
-		return(self.m(x)) #*10) #MULTIPLY BY 10 SINCE MAX VALUES OF FRIC CAN BE >> 1
 
+		# return(x) #-def want a linear activation function
+		return(self.m(x))
 
 class Critic(nn.Module):
 	"""Critic (Value) Model.""" 
@@ -65,7 +65,8 @@ class Critic(nn.Module):
 		# self.m = nn.Sigmoid()
 		self.m = nn.Tanh()
 
-
+		self.fc2.weight.data.uniform_(-1.5e-3, 1.5e-3)
+		self.q.weight.data.uniform_(-3e-3, 3e-3)
 		#init weights
 		# f1 = 1 / (np.sqrt(self.fc1.weight.data.size()[0]))
 		# self.fc1.weight.data.uniform_(-f1, f1)

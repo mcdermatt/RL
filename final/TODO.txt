@@ -142,8 +142,8 @@ QUESTIONS----------------------------------------------------
 		Means I am not exploring enough
 			Soln- Add noise to critic loss
 
-		does this just mean that the network can accurately predict the outcome of the policy? As in it just settled on a crap policy?
-			Pretty much this. It descends into abject despair, and at least finds solace in the fact that its worst predictions are reliably coming true.
+		"does this just mean that the network can accurately predict the outcome of the policy? As in it just settled on a crap policy?
+			Pretty much this. It descends into abject despair, and at least finds solace in the fact that its worst predictions are reliably coming true.""
 
 	Network is just optimizing the dominant parameter, not really adjusting the others, is this OK?
 
@@ -152,3 +152,7 @@ QUESTIONS----------------------------------------------------
 		Sigmoid - bad when inputs are too large
 		relu6- caps relu at 6 to prevent outputs from exploding
 		leaky_relu - relu with slight slope for x<0
+
+	Actor does not react quickly enough once reward decreases
+
+	Critic loss asymptotically approaches 1 not 0

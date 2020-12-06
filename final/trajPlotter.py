@@ -6,9 +6,9 @@ import matplotlib.patches as mpatches
 class trajPlotter():
 	"""takes in two arm paths and generates graph"""
 
-	filename1 = "C:/Users/Matt/comp138/final/path_y1.npy"
+	filename1 = "path_y1.npy"
 	path1 = np.load(filename1)
-	filename2 = "C:/Users/Matt/comp138/final/path_y2.npy"
+	filename2 = "path_y2.npy"
 	path2 = np.load(filename2)
 
 	def __init__(self, path1 = path1, path2 = path2):
@@ -37,14 +37,22 @@ class trajPlotter():
 
 		plt.legend(handles=[j0_patch, j1_patch, j2_patch])
 
+		#pos
 		plt.plot(t,path1[:,0], 'r--')
 		plt.plot(t,path1[:,1], 'g--')
 		plt.plot(t,path1[:,2], 'b--')
 		plt.plot(t,path2[:,0], 'r-')
 		plt.plot(t,path2[:,1], 'g-')
 		plt.plot(t,path2[:,2], 'b-')
+		#vel
+		# plt.plot(t,path1[:,3], 'r--')
+		# plt.plot(t,path1[:,4], 'g--')
+		# plt.plot(t,path1[:,5], 'b--')
+		# plt.plot(t,path2[:,3], 'r-')
+		# plt.plot(t,path2[:,4], 'g-')
+		# plt.plot(t,path2[:,5], 'b-')
 
-		plt.savefig("C:/Users/Matt/comp138/final/pathFig.png", transparent = True, facecolor = (0.875,0.875,0.875))
+		plt.savefig("pathFig.png", transparent = True, facecolor = (0.875,0.875,0.875))
 		# plt.show()
 
 if __name__ == "__main__":

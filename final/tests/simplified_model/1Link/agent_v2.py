@@ -1,4 +1,4 @@
-from model import Actor, Critic
+from model_1Layer import Actor, Critic
 import torch
 from torch.autograd import Variable
 import torch.nn.functional as F
@@ -12,11 +12,11 @@ device = torch.device("cuda:0")
 
 
 LR_ACTOR  = 0.0001# 0.0001
-LR_CRITIC = 0.0001 #0.001
+LR_CRITIC = 0.001 #0.001
 WEIGHT_DECAY =  0.001
 BUFFER_SIZE = 1000000 #1000000
 BATCH_SIZE = 1024 #128
-discount_factor = 0.5 #0.99
+discount_factor = 0.99 #0.99
 TAU = 0.001 #0.005
 # TAU = 0.99
 
@@ -31,10 +31,12 @@ class Agent():
 		self.actor = Actor(state_size,action_size).to(device)
 		self.actor_target = Actor(state_size,action_size).to(device)
 		self.actor_optimizer = optim.Adam(self.actor.parameters(), lr = LR_ACTOR)
+		# self.actor_optimizer = optim.SGD(self.actor.parameters(), lr = LR_ACTOR, momentum = 0.9)
 		#init critic
 		self.critic = Critic(state_size,action_size).to(device)
 		self.critic_target = Critic(state_size,action_size).to(device)
 		self.critic_optimizer = optim.Adam(self.critic.parameters(), lr = LR_CRITIC, weight_decay = WEIGHT_DECAY)
+		# self.critic_optimizer = optim.SGD(self.critic.parameters(), lr = LR_CRITIC, momentum = 0.9)
 
 		self.memory = ReplayBuffer(action_size, BUFFER_SIZE, BATCH_SIZE)
 
@@ -61,11 +63,11 @@ class Agent():
 		next_Q = self.critic_target.forward(next_states, next_actions)
 		Qprime = rewards + discount_factor*next_Q*(1-dones) #ignores result of samples that are at the end
 
-		# closs = nn.SmoothL1Loss()
-		closs = nn.MSELoss() #- error explodes if there are outliars
+		closs = nn.SmoothL1Loss() #switched to this because I was getting negative actor loss (not possible)
+		# closs = nn.MSELoss() #- error potentially explodes if there are outliars
 		# critic_loss = closs(Qvals,Qprime)
 		# critic_loss = closs(Qvals,Qprime)*(1 + 1*torch.randn(1)) #+ 0.1*torch.rand(1) #ADD NOISE TO CRITIC
-		critic_loss = closs(Qvals,Qprime) + torch.rand(1) #+ 0.1*torch.rand(1) #ADD NOISE TO CRITIC
+		critic_loss = closs(Qvals,Qprime) #+ torch.rand(1) #+ 0.1*torch.rand(1) #ADD NOISE TO CRITIC
 		self.cLossOut = critic_loss.cpu().detach().numpy()
 		self.critic_optimizer.zero_grad()
 		critic_loss.backward()
