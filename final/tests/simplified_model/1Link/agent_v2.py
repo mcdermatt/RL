@@ -1,4 +1,6 @@
-from model_1Layer import Actor, Critic
+# from model_1Layer import Actor, Critic
+from model import Actor, Critic #OG 2 layer
+# from model_3Layer import Actor, Critic
 import torch
 from torch.autograd import Variable
 import torch.nn.functional as F
@@ -12,13 +14,12 @@ device = torch.device("cuda:0")
 
 
 LR_ACTOR  = 0.0001# 0.0001
-LR_CRITIC = 0.001 #0.001
+LR_CRITIC = 0.0001 #0.001
 WEIGHT_DECAY =  0.001
 BUFFER_SIZE = 1000000 #1000000
-BATCH_SIZE = 1024 #128
+BATCH_SIZE = 128 #1024
 discount_factor = 0.99 #0.99
-TAU = 0.001 #0.005
-# TAU = 0.99
+TAU = 0.005 #0.001
 
 class Agent():
 
@@ -57,23 +58,24 @@ class Agent():
 	def learn(self, experiences, discount_factor):
 		states, actions, rewards, next_states, dones = experiences
 
-		#update critic
-		Qvals = self.critic.forward(states,actions)
-		next_actions = self.actor_target.forward(next_states)
-		next_Q = self.critic_target.forward(next_states, next_actions)
+		#critic-------------------------------
+		Qvals = self.critic(states,actions)
+		next_actions = self.actor_target(next_states)
+		next_Q = self.critic_target(next_states, next_actions)
 		Qprime = rewards + discount_factor*next_Q*(1-dones) #ignores result of samples that are at the end
 
-		closs = nn.SmoothL1Loss() #switched to this because I was getting negative actor loss (not possible)
-		# closs = nn.MSELoss() #- error potentially explodes if there are outliars
-		# critic_loss = closs(Qvals,Qprime)
-		# critic_loss = closs(Qvals,Qprime)*(1 + 1*torch.randn(1)) #+ 0.1*torch.rand(1) #ADD NOISE TO CRITIC
+		# closs = nn.SmoothL1Loss() #switched to this because I was getting negative actor loss (not possible)
+		closs = nn.MSELoss() #most commonly used loss metric but error potentially explodes if there are outliars
 		critic_loss = closs(Qvals,Qprime) #+ torch.rand(1) #+ 0.1*torch.rand(1) #ADD NOISE TO CRITIC
+	
 		self.cLossOut = critic_loss.cpu().detach().numpy()
+	
 		self.critic_optimizer.zero_grad()
 		critic_loss.backward()
+		# torch.nn.utils.clip_grad_norm_(self.critic.parameters(), 4) #test- grad clipping
 		self.critic_optimizer.step()
 
-		# Compute actor loss
+		# actor-------------------------------
 		actions_pred = self.actor(states)
 		actor_loss = -self.critic(states, actions_pred).mean()
 		self.aLossOut = actor_loss.cpu().detach().numpy()
@@ -81,6 +83,7 @@ class Agent():
 		# Minimize the loss
 		self.actor_optimizer.zero_grad()
 		actor_loss.backward()
+		# torch.nn.utils.clip_grad_norm_(self.actor.parameters(), 4) #test- grad clipping
 		self.actor_optimizer.step()
 
 		self.soft_update(self.critic, self.critic_target, TAU)
