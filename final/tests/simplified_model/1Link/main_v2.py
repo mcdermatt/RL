@@ -44,7 +44,7 @@ else:
 # total length of time from start to finish of each trial
 dt = 0.5 # was 0.5
 trials = 50000
-numSteps = 10 # was 10
+numSteps = 1 # was 10
 scale = torch.Tensor([0.5,0.5,0.25]) #max reasonable vals for estimated friction params
 									 # 	hopefully this should prevent vanishing gradients?
 

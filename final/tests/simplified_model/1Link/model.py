@@ -10,7 +10,7 @@ import numpy as np
 #as is- performs well for the first few hundred trials then overshoots and never looks back
 
 class Actor(nn.Module): #create actor class and inherit from nn.Module
-	def __init__(self, state_size = 6, action_size = 9, nodes1 = 10, nodes2 = 5): #was 1000, 1000
+	def __init__(self, state_size = 6, action_size = 9, nodes1 = 100, nodes2 = 50): #was 1000, 1000
 		super(Actor,self).__init__() #need to run this because init func of nn.Module is not run upon inherit
 
 		#Linear is a simple flat fuly connected
@@ -45,17 +45,23 @@ class Actor(nn.Module): #create actor class and inherit from nn.Module
 		#or
 		# x = F.leaky_relu((self.bn1(self.fc1(state)))) 
 		# x = F.leaky_relu((self.bn2(self.fc2(x))))
+		#or
+		# x = F.leaky_relu((self.fc1(state)))
+		# x = F.leaky_relu((self.fc2(x)))
 
 		x = self.fc3(x)
 
+		#was this
+		return(self.m(x))
+
+		#now this
 		# x = torch.clamp(x,min = 0.001, max = 1)
 		# return(x) #-def want a linear activation function
 
-		return(self.m(x))
-
+#simple 2 HL critic
 class Critic(nn.Module):
 	"""Critic (Value) Model.""" 
-	def __init__(self, state_size = 6, action_size = 9, nodes1=20, nodes2 = 10): #was 1000, 1000
+	def __init__(self, state_size = 6, action_size = 9, nodes1=200, nodes2 = 100): #was 1000, 1000
 		super(Critic, self).__init__()
 
 		self.fc1 = nn.Linear(state_size+action_size, nodes1)
@@ -72,7 +78,7 @@ class Critic(nn.Module):
 		x = self.fc3(x)
 		return x
 
-#12/6/2020
+#pre 12/7/2020
 # class Critic(nn.Module):
 # 	"""Critic (Value) Model.""" 
 # 	def __init__(self, state_size = 6, action_size = 9, s1_units=10, s2_units = 5 , a1_units=5): #was 1000, 1000

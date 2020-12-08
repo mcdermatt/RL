@@ -15,7 +15,7 @@ class Actor(nn.Module): #create actor class and inherit from nn.Module
 		self.fc1 = nn.Linear(state_size, nodes1) #input current 13 state observations
 		self.fc2 = nn.Linear(nodes1, action_size)  #arbitrarily choosing 64 nodes for hidden layer (probably too small)
 		
-		# self.m = nn.Sigmoid()
+		self.m = nn.Sigmoid()
 
 		#BatchNorm1D normalizes data to 0 mean and unit variance
 		# self.bn1 = nn.BatchNorm1d(nodes1, momentum = 0.1)
@@ -29,8 +29,8 @@ class Actor(nn.Module): #create actor class and inherit from nn.Module
 	def forward(self, state):
 		x = F.relu(self.fc1(state)) #batchNorm kills neurons in ReLu when it sends data below 0
 		x = self.fc2(x)
-		# return(self.m(x))
-		return(x)
+		return(self.m(x))
+		# return(x)
 
 class Critic(nn.Module):
 	"""Critic (Value) Model.""" 

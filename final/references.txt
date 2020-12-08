@@ -21,3 +21,6 @@ Noisy Networks for Exploration:
 
 Debugging Neural Networks:
 	https://towardsdatascience.com/debugging-neural-networks-with-pytorch-and-w-b-2e20667baf72
+
+Actor-Critic Network for assistive robotics- human robot "as needed" optimal control
+	https://www.hindawi.com/journals/mpe/2014/285248/
