@@ -1,0 +1,13 @@
+each pull- starting at random position and velocity
+
+Reward defined as 1 - difference between ground truth and estimated friction model velocity
+
+each combinations of input parameters make up bandit
+
+
+reward network-
+
+contextual bandits- 
+
+
+dealing with continuous input space

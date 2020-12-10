@@ -16,10 +16,10 @@ device = torch.device("cuda:0")
 LR_ACTOR  = 0.00001# 0.0001
 LR_CRITIC = 0.0001 #0.001
 WEIGHT_DECAY =  0.001
-BUFFER_SIZE = 1000000 #1000000
-BATCH_SIZE = 1024 #128
+BUFFER_SIZE = 500 #1000000
+BATCH_SIZE = 128 #1024
 discount_factor = 0.99 #0.99
-TAU = 0.001 #0.005
+TAU = 0.0001 #0.001
 
 class Agent():
 

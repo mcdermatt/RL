@@ -24,8 +24,8 @@ class Actor(nn.Module): #create actor class and inherit from nn.Module
 		self.m = nn.Sigmoid()
 
 		#BatchNorm1D normalizes data to 0 mean and unit variance
-		self.bn1 = nn.BatchNorm1d(nodes1, momentum = 0.1)
-		self.bn2 = nn.BatchNorm1d(nodes2, momentum = 0.1)
+		self.bn1 = nn.BatchNorm1d(nodes1)#, momentum = 0.1)
+		self.bn2 = nn.BatchNorm1d(nodes2)#, momentum = 0.1)
 		self.reset_parameters()
 
 	def reset_parameters(self):

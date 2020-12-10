@@ -10,8 +10,8 @@ import torch
 if __name__ == '__main__':
 
     agent = Agent(n_actions=3)
-    numTrials = 100000
-    dt = 0.05 # was 0.5
+    numTrials = 5000
+    dt = 0.01 # was 0.5
     numSteps = 1 # was 10
     scale = np.array([0.5,0.5,0.25])
 
