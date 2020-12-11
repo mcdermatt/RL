@@ -11,3 +11,44 @@ contextual bandits-
 
 
 dealing with continuous input space
+
+Goals:
+	specify actions as feature vector
+	continuous actions
+	continuous 
+
+Vowpal Wabbit
+	look into CATS-pdf for continuous actions
+	https://github.com/VowpalWabbit/vowpal_wabbit/wiki/CATS,-CATS-pdf-for-Continuous-Actions
+
+	https://arxiv.org/pdf/2006.06040.pdf
+
+CATS - continuous action space contextual bandit algorithm
+	Idea- continuous action space is less important than contextual bandits- can always resample around higher scoring regions of space
+
+Conditional contextual bandit (CCB)-
+	is an extension over Contextual Bandit (CB), where there are multiple slots in which an action can be chosen. There is a shared context, as well as features for each action and slot.
+
+Associative Search Task- contextual bandits
+
+VW Logged Contextual Bandits:
+	optimize predictor based on PAST DATA- does not implement exploration(use --cb_explore if I need that)
+
+	input: (x,a,c,p)
+		x = current features/ context
+		a = chosen action
+		c = observed cost
+		p = probability the exploration policy choose this action in context x
+
+		action:cost:probability | features
+		1:2:0.4 | a c  
+		3:0.5:0.2 | b d  
+		4:1.2:0.5 | a b c  
+		2:1:0.3 | b c  
+		3:1.5:0.7 | a d  
+
+Combiniatorial Multi-Armed Bandits:
+	https://arxiv.org/pdf/2010.16269.pdf
+
+
+	

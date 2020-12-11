@@ -5,7 +5,7 @@ import matplotlib.patches as mpatches
 from time import sleep
 from statePredictor import statePredictor
 
-fidelity = 8 #number of discrete values to test for each parameter
+fidelity = 5 #number of discrete values to test for each parameter
 numBandits = fidelity**3
 numTrials = 10
 dt = 0.5 #time between start and stop of each trial
@@ -35,10 +35,10 @@ rew = np.zeros([numBandits,numTrials])
 avgRew = np.zeros([numBandits,numTrials])
 
 #init plot
-fig = plt.figure(0)
-ax = fig.add_subplot()
-ax.set_xlabel("trial")
-ax.set_ylabel("reward")
+# fig = plt.figure(0)
+# ax = fig.add_subplot()
+# ax.set_xlabel("trial")
+# ax.set_ylabel("reward")
 
 for trial in range(numTrials):
 	#get random starting states
@@ -59,9 +59,9 @@ for trial in range(numTrials):
 # 	ax.plot(avgRew[m])
 # 	plt.draw()
 # 	plt.pause(0.01)
-
 # plt.pause(30)
+
 print(rew[:,-1])
-best = np.argmax(rew[:,-1])
-print("best score is ", max(rew[:,-1]))
+best = np.argmax(avgRew[:,-1])
+print("best score is ", max(avgRew[:,-1]))
 print(bandits[best])

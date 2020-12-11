@@ -1,0 +1,3 @@
+Continuous Multi-Armed Bandits and Multiparameter Processes
+
+	https://www-jstor-org.ezproxy.library.tufts.edu/stable/pdf/2244018.pdf?refreqid=excelsior%3Aee2436b11eadd03004c5af7e8514c969
