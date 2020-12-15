@@ -8,12 +8,11 @@ import torch.optim as optim
 import time
 from agent import Agent
 
-goal_pos = 1.5
 fidelity = 0.1 #0.01 # seconds per step
 trials = 100
 doneThresh = 0.1 #stop trial of theta gets within this distance
 maxTrialLen = 100
-action_scale = 3 #scales max possible torque output (default is too small)
+action_scale = 3
 
 #init CUDA
 if torch.cuda.is_available():
@@ -37,12 +36,13 @@ sp.numPts = 2
 # action_vec = np.zeros(trials*numSteps)
 tick = 0
 
-agent = Agent(2,1)
+agent = Agent(3,1) #pos, vel, goal_pos
 
 for trial in range(trials):
 	print("took ", tick, " ticks")
 	print("trial ", trial, " -------------------------------------")
 	#get initial states
+	goal_pos = torch.randn(1)
 	states = torch.randn(2)
 	# states = torch.zeros(2)
 	next_states = states
@@ -57,10 +57,10 @@ for trial in range(trials):
 		#decide on action given states
 		agent.actor.eval()
 		with torch.no_grad():
-			action = agent.actor(states.unsqueeze(0))
+			action = agent.actor(torch.cat((states,goal_pos), dim=0).unsqueeze(0))
 		agent.actor.train() #unlocks actor
 
-		# print("states = ",states, " action = ", action.cpu().detach().numpy()[0])
+		# print("states = ",states, " action = ", action.cpu().detach().numpy()[0], " goal = ", goal_pos)
 		
 		sp.numerical_specified[0] = action.cpu().detach().numpy()[0]*action_scale
 		sp.x0 = states
@@ -69,22 +69,21 @@ for trial in range(trials):
 		next_states = sp.predict()[1]
 		next_states = torch.as_tensor(next_states)
 		states = torch.as_tensor(states)
-		reward = -abs(states[0] - goal_pos) # just position
-		# reward = -abs(states[0] - goal_pos) - 0.1*abs(states[1]) #position and velocity
+		reward = -abs(states[0] - goal_pos)
 		reward = torch.as_tensor(reward)
 
 		if tick == maxTrialLen:
-			reward -= 10 #add punsihment for running out the clock
+			reward -= 10
 			done = 1
 		if (abs(sp.x0[0] - goal_pos)) < doneThresh and (abs(sp.x0[1]) < 0.1): #actual goal for 1dof -> go to this position and stop
 		# if abs(sp.x0[0]) > goal_pos and abs(sp.x0[1]) < 0.1 : #simple goal -> get 2.5 rad away from 0 and stop moving
 			done = 1
 		done = torch.as_tensor(done)
 
-		agent.step(states.cpu().numpy(), action.cpu().numpy(), reward.cpu().numpy(), next_states.cpu().numpy(), done.cpu().numpy())
+		agent.step(torch.cat((states,goal_pos), dim=0).cpu().numpy(), action.cpu().numpy(), reward.cpu().numpy(), torch.cat((next_states,goal_pos), dim=0).cpu().numpy(), done.cpu().numpy())
 		
 		# print("states = ",states)
 		# print("next_states = ", next_states)
 
 		tick += 1
-	print("states = ",states, " action = ", action.cpu().detach().numpy()[0])
+	print("goal = ", goal_pos, " states = ",states, " action = ", action.cpu().detach().numpy()[0])

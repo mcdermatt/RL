@@ -160,7 +160,7 @@ print("generated right_hand_side")
 #initial values for system
 x0 = zeros(2)
 #initial pos
-x0[0] = deg2rad(30)
+x0[0] = deg2rad(90)
 
 #initial vel
 # x0[3] = deg2rad(180)
@@ -179,6 +179,8 @@ numerical_constants = array([0.164,  # j1_length [m]
 
 #set joint torques to zero for first simulation
 numerical_specified = zeros(1)
+numerical_specified[0] = -1
+
 args = {'constants': numerical_constants,
         'specified': numerical_specified}
 frames_per_sec = 60
