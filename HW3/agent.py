@@ -34,7 +34,7 @@ class Agent():
 		#init critic
 		self.critic = Critic(state_size,action_size).to(device)
 		self.critic_target = Critic(state_size,action_size).to(device)
-		self.critic_optimizer = optim.Adam(self.critic.parameters(), lr = LR_ACTOR, weight_decay = WEIGHT_DECAY)
+		self.critic_optimizer = optim.Adam(self.critic.parameters(), lr = LR_CRITIC, weight_decay = WEIGHT_DECAY)
 
 		self.memory = ReplayBuffer(action_size, BUFFER_SIZE, BATCH_SIZE)
 

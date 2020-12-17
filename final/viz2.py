@@ -196,7 +196,7 @@ class viz:
 		# 		self.rx.draw()
 
 		# self.window.flip()
-		time.sleep(0.01)
+		time.sleep(1/60)
 
 	def draw_base(self,link):
 		glLoadIdentity()
@@ -323,10 +323,10 @@ class viz:
 
 if __name__ == "__main__":
 
-	filename1 = "C:/Users/Matt/comp138/final/path_y1.npy"
-	filename2 = "C:/Users/Matt/comp138/final/path_y2.npy"
+	filename1 = "path_y1.npy"
+	filename2 = "path_y2.npy"
 	path1 = np.load(filename1)
 	path2 = np.load(filename2)
-	viz = viz(path2, path1, use_GPU=False)
+	viz = viz(path2, path1, use_GPU=True)
 
 	viz.start()

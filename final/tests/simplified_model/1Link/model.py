@@ -40,23 +40,24 @@ class Actor(nn.Module): #create actor class and inherit from nn.Module
 		# x = F.relu((self.bn2(self.fc2(x))))
 
 		#now this
-		x = F.relu((self.fc1(state))) #batchNorm kills neurons in ReLu when it sends data below 0
-		x = F.relu((self.fc2(x)))
+		# x = F.relu((self.fc1(state))) #batchNorm kills neurons in ReLu when it sends data below 0
+		# x = F.relu((self.fc2(x)))
 		#or
 		# x = F.leaky_relu((self.bn1(self.fc1(state)))) 
 		# x = F.leaky_relu((self.bn2(self.fc2(x))))
 		#or
-		# x = F.leaky_relu((self.fc1(state)))
-		# x = F.leaky_relu((self.fc2(x)))
+		x = F.leaky_relu((self.fc1(state)))
+		x = F.leaky_relu((self.fc2(x)))
 
 		x = self.fc3(x)
 
 		#was this
-		return(self.m(x))
+		# return(self.m(x))
 
-		#now this
+		#THIS IS WORKING???? 
 		# x = torch.clamp(x,min = 0.001, max = 1)
-		# return(x) #-def want a linear activation function
+		# x = torch.clamp(x, max = 1)
+		return(x) #-def want a linear activation function
 
 #simple 2 HL critic
 class Critic(nn.Module):

@@ -13,12 +13,12 @@ device = torch.device("cuda:0")
 # device = torch.device("cpu")
 
 
-LR_ACTOR  = 0.00001# 0.0001
-LR_CRITIC = 0.0001 #0.001
+LR_ACTOR  = 0.0001# 0.00001
+LR_CRITIC = 0.001 #0.0001
 WEIGHT_DECAY =  0.001
-BUFFER_SIZE = 500 #1000000
+BUFFER_SIZE = 100000 #500 #1000000
 BATCH_SIZE = 128 #1024
-discount_factor = 0.99 #0.99
+discount_factor = 0.0 #set to zero since this problem is NOT TRUE SEQUENTIAL DECISION MAKING TASK
 TAU = 0.0001 #0.001
 
 class Agent():

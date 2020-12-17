@@ -20,6 +20,7 @@ else:
 	print("Running on the CPU")
 torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
+
 #init agent (state size, action size)
 agent = Agent(13,5)
 

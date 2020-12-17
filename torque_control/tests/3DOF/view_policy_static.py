@@ -56,7 +56,7 @@ base, = plt.plot([0],[0],[0],'go', markersize = 8)
 tick = 0
 running = True
 while running:
-	states = torch.rand(6)
+	states = torch.randn(6)
 	states[3:] = torch.zeros(3)
 	next_states = states
 
@@ -111,7 +111,7 @@ while running:
 		plt.draw()
 		plt.pause(0.1)
 		# plt.pause(0.03)
-		link.remove()
+		# link.remove()
 		EE.remove()
 		goal.remove()
 

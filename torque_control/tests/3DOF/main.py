@@ -55,9 +55,9 @@ for trial in range(trials):
 	print("took ", tick, " ticks")
 	print("trial ", trial, " -------------------------------------")
 	#get initial states
-	states = torch.rand(6) #simplify problem - start only in quadrant 1
+	states = torch.randn(6) #simplify problem - start only in quadrant 1
 	# states[3:] = torch.randn(3)
-	states[3:] = torch.zeros(3) #start at zero velocity
+	# states[3:] = torch.zeros(3) #start at zero velocity
 	next_states = states
 
 	tick = 0
@@ -113,7 +113,8 @@ for trial in range(trials):
 		critic_loss[count] = agent.cLossOut	
 		count += 1	
 
-	rewardArr = np.append(rewardArr, startDist - endDist)
+	# rewardArr = np.append(rewardArr, startDist - endDist)
+	rewardArr = np.append(rewardArr, endDist)
 	print("improvement = ", startDist - endDist)
 	print("dist  = ",dist, " action = ", action.cpu().detach().numpy()[0])
 	print("last states = ", states)

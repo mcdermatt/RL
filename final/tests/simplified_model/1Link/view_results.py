@@ -65,5 +65,15 @@ plt.plot(np.arange(1, len(avg) + 1), avg)
 plt.xlabel('Step #')
 plt.xlim(xmin = 0, xmax = lastPt)
 
+#actions taken over time
+fig = plt.figure(3)
+actions = np.load("actions.npy")
+plt.ylabel('Actions taken')
+avgAct = movingAverage(actions,100)
+plt.plot(np.ones(len(avgAct))*0.05) #plot ground truth
+plt.plot(np.arange(1,len(avgAct)+1),avgAct) #plot moving average actions taken
+plt.xlabel("Step #")
+
+
 # plt.savefig(filename)
 plt.show()

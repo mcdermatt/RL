@@ -45,8 +45,9 @@ else:
 dt = 0.5 # was 0.5
 trials = 50000
 numSteps = 1 # was 10
-scale = torch.Tensor([0.5,0.5,0.25]) #max reasonable vals for estimated friction params
+# scale = torch.Tensor([0.5,0.5,0.25]) #max reasonable vals for estimated friction params
 									 # 	hopefully this should prevent vanishing gradients?
+scale = 0.25 #only looking at one variable
 
 #init state predictors ---------------------
 #ground truth model
@@ -60,12 +61,13 @@ ef.dt = dt/numSteps #lol
 ef.numPts = 2 #only generate 2 at a time since friction params are updated each trial
 
 #init NN------------------------------------
-agent = Agent(2,3) #1DOF
-# agent = Agent(2,1)
+# agent = Agent(2,3) #1DOF arm
+agent = Agent(2,1) #(state size, action size)
 
 rews = np.zeros(trials*numSteps)
 actor_loss = np.zeros(trials*numSteps)
 critic_loss = np.zeros(trials*numSteps)
+action_vec = np.zeros(trials*numSteps)
 
 for trial in range(trials):
 	# print("new trial -------")
@@ -98,11 +100,17 @@ for trial in range(trials):
 		a = action #save true action for printing later	
 
 		#plug actions chosen by actor network into enviornment
-		ef.numerical_constants[5:] = action.cpu().detach().numpy() #in this case actions are friction parameters
-		# ef.numerical_constants[-1] = action.cpu().detach().numpy() #in this case actions are friction parameters
+		# ef.numerical_constants[5:] = action.cpu().detach().numpy() #in this case actions are friction parameters
+		ef.numerical_constants[-1] = action.cpu().detach().numpy() #in this case actions are friction parameters
 		ef.x0 = efStates
 		# gt.x0 = efStates #reset ground truth arm to start out in same spot as estimated fric arm at each timestep
 		gt.x0 = gtStates 
+		
+		#make gt params config dependant - TEST
+		# gt.numerical_constants[5] = 0.1 + 0.1*np.sin(gt.x0[0].cpu())
+		# gt.numerical_constants[6] = 0.125 + 0.125*np.sin(gt.x0[0].cpu())
+		gt.numerical_constants[7] = 0.05 + 0.025*np.sin(gt.x0[0].cpu()) + 0.025*np.cos(3*gt.x0[1].cpu())
+		
 		efStates = ef.predict()[1]
 		gtStates = gt.predict()[1]
 		# print("efStates = ", efStates, " gtStates = ", gtStates)
@@ -124,6 +132,7 @@ for trial in range(trials):
 		rews[trial*numSteps + step] = reward #.cpu().numpy()
 		actor_loss[trial*numSteps + step] = agent.aLossOut #straight from critic
 		critic_loss[trial*numSteps + step] = agent.cLossOut #error between critic and enviorment
+		action_vec[trial*numSteps + step] = action
 
 	if trial % 10 == 0:
 		print("Trial #: ", trial, "----------------------------------------------")
@@ -139,6 +148,7 @@ for trial in range(trials):
 		np.save("rewards", rews)
 		np.save("actor_loss", actor_loss)
 		np.save("critic_loss", critic_loss)
+		np.save("actions", action_vec)
 
 		torch.save(agent.actor.state_dict(), 'checkpoint/checkpoint_actor.pth')
 		torch.save(agent.critic.state_dict(), 'checkpoint/checkpoint_critic.pth')
