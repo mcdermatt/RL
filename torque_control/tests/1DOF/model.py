@@ -11,6 +11,7 @@ import numpy as np
 class Actor(nn.Module): #create actor class and inherit from nn.Module
 	def __init__(self, state_size = 6, action_size = 9, nodes1 = 100, nodes2 = 50): #was 1000, 1000
 		super(Actor,self).__init__() #need to run this because init func of nn.Module is not run upon inherit
+		self.checkpoint_file = "checkpoint/actor"
 
 		#Linear is a simple flat fuly connected
 		self.fc1 = nn.Linear(state_size, nodes1) #input current 13 state observations
@@ -59,11 +60,19 @@ class Actor(nn.Module): #create actor class and inherit from nn.Module
 		# x = torch.clamp(x, max = 1)
 		# return(x) #-def want a linear activation function
 
+	def save_checkpoint(self):
+		torch.save(self.state_dict(), self.checkpoint_file)
+
+	def load_checkpoint(self):
+		self.load_state_dict(torch.load("checkpoint/actor1"))
+
 #simple 2 HL critic
 class Critic(nn.Module):
 	"""Critic (Value) Model.""" 
 	def __init__(self, state_size = 6, action_size = 9, nodes1=200, nodes2 = 100): #was 1000, 1000
 		super(Critic, self).__init__()
+
+		self.checkpoint_file = "checkpoint/critic"
 
 		self.fc1 = nn.Linear(state_size+action_size, nodes1)
 		self.fc2 = nn.Linear(nodes1, nodes2)
@@ -78,6 +87,13 @@ class Critic(nn.Module):
 		x = F.relu(self.fc2(x))
 		x = self.fc3(x)
 		return x
+
+	def save_checkpoint(self):
+		torch.save(self.state_dict(), self.checkpoint_file)
+
+	def load_checkpoint(self):
+		self.load_state_dict(torch.load("checkpoint/critic1"))
+
 
 #pre 12/7/2020
 # class Critic(nn.Module):

@@ -8,11 +8,14 @@ import torch.optim as optim
 import time
 from agent import Agent
 
+#converging as is
+
 fidelity = 0.1 #0.01 # seconds per step
-trials = 100
+trials = 10000
 doneThresh = 0.1 #stop trial of theta gets within this distance
 maxTrialLen = 100
 action_scale = 3
+save_progress = True
 
 #init CUDA
 if torch.cuda.is_available():
@@ -28,6 +31,8 @@ else:
 sp = statePredictor()
 sp.dt = fidelity
 sp.numPts = 2
+#EASY MODE- disable friction
+# sp.numerical_constants[5:] = 0 
 
 #init arrays for tracking results
 # rewards = np.zeros(trials*numSteps) 
@@ -69,11 +74,11 @@ for trial in range(trials):
 		next_states = sp.predict()[1]
 		next_states = torch.as_tensor(next_states)
 		states = torch.as_tensor(states)
-		reward = -abs(states[0] - goal_pos)
+		reward = -(abs(states[0] - goal_pos)**2) #- 0.1*abs(states[1]) #test velocity
 		reward = torch.as_tensor(reward)
 
 		if tick == maxTrialLen:
-			reward -= 10
+			# reward -= 10 #punishment for not finihsing
 			done = 1
 		if (abs(sp.x0[0] - goal_pos)) < doneThresh and (abs(sp.x0[1]) < 0.1): #actual goal for 1dof -> go to this position and stop
 		# if abs(sp.x0[0]) > goal_pos and abs(sp.x0[1]) < 0.1 : #simple goal -> get 2.5 rad away from 0 and stop moving
@@ -87,3 +92,7 @@ for trial in range(trials):
 
 		tick += 1
 	print("goal = ", goal_pos, " states = ",states, " action = ", action.cpu().detach().numpy()[0])
+	
+	if trial % 10 == 0:
+		if save_progress:
+			agent.save_models()

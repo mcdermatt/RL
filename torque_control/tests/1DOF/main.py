@@ -69,7 +69,7 @@ for trial in range(trials):
 		next_states = sp.predict()[1]
 		next_states = torch.as_tensor(next_states)
 		states = torch.as_tensor(states)
-		reward = -abs(states[0] - goal_pos) # just position
+		reward = -(abs(states[0] - goal_pos)**2) # just position
 		# reward = -abs(states[0] - goal_pos) - 0.1*abs(states[1]) #position and velocity
 		reward = torch.as_tensor(reward)
 

@@ -11,8 +11,8 @@ device = torch.device("cuda:0")
 # device = torch.device("cpu")
 
 
-LR_ACTOR  = 0.0001# 0.00001
-LR_CRITIC = 0.001 #0.0001
+LR_ACTOR  = 0.001# 0.0001
+LR_CRITIC = 0.001 #0.001
 WEIGHT_DECAY =  0.001
 BUFFER_SIZE = 1000000
 BATCH_SIZE = 128 #1024
@@ -91,3 +91,12 @@ class Agent():
 		"""θ_target = τ*θ_local + (1 - τ)*θ_target"""
 		for target_param, local_param in zip(target_model.parameters(), local_model.parameters()):
 			target_param.data.copy_(tau*local_param.data + (1.0-tau)*target_param.data)
+
+	def save_models(self):
+		# print('saving checkpoint')
+		self.actor.save_checkpoint()
+		self.critic.save_checkpoint()
+
+	def load_models(self):
+		self.actor.load_checkpoint()
+		self.critic.load_checkpoint()
