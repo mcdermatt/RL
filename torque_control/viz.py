@@ -5,7 +5,7 @@ from pywavefront import visualization, Wavefront
 import numpy as np
 import time
 from pyglet.window import mouse
-from trajPlotter import trajPlotter
+# from trajPlotter import trajPlotter
 
 class viz:
 	"""Robotic arm visualization class made using OpenGL
@@ -17,7 +17,7 @@ class viz:
 		self.pathA = path
 		self.pathB = path2
 		self.lenPath = len(path)
-		self.tp = trajPlotter(self.pathA,self.pathB)
+		# self.tp = trajPlotter(self.pathA,self.pathB)
 
 		if use_GPU is False:
 			self.window = pyglet.window.Window(width=1280,height=720)
@@ -274,13 +274,13 @@ class viz:
 
 if __name__ == "__main__":
 
-	filename1 = "path.npy"
-	filename2 = "path.npy"
+	filename1 = "best_path.npy"
+	filename2 = "best_goal_path.npy"
 	path1 = np.load(filename1)
 	path2 = np.load(filename2)
 
-	test = np.ones([np.shape(path1)[0],3])*np.array([1,0.5,1.2])
+	# test = np.ones([np.shape(path1)[0],3])*np.array([1,0.5,1.2])
 
-	viz = viz(path1, test, use_GPU=True)
+	viz = viz(path1, path2, use_GPU=True)
 
 	viz.start()

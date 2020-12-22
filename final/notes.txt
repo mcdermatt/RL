@@ -12,3 +12,38 @@
 		randomized starting velocities are NEVER zero, estimated static friction vals
 		have no chance of being accurate as of right now
 		
+
+
+
+
+gt = ground truth friction enviornment
+ef = current estimated friction enviornment
+
+for each trial:
+	goal = rand(3)       %theta0,theta1,theta2
+	states = rand(3)     
+	for each step:
+		action = actor(states)
+		ef.friction_values = action
+		next_states_ef = ef.predict(states)
+		next_states_gt = gt.predict(states)
+		reward = -abs(next_states_gt - next_states_ef)**2
+		if last_step:
+			done = 1
+		memory_buffer.add(state, action, reward, next_state, done)
+
+		if total steps taken > memory_buffer.size
+			randomly select batch of n experiences from memory buffer
+			for each experience:
+				Qvals = critic(states,actions)
+				next_actions = actor_target(next_states)
+				next_Q = critic_target(next_states, next_actions)
+				Qprime = rewards + discount_factor*next_Q*(1-dones)
+				critic_loss = closs(Qvals,Qprime) 
+				critic_loss.backward()
+
+				actions_pred = actor(states)
+				actor_loss = -critic(states, actions_pred)
+				actor_loss.backward()
+	                     
+				θ_target = τ*θ_local + (1 - τ)*θ_target  #soft update policy

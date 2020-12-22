@@ -14,10 +14,10 @@ device = torch.device("cuda:0")
 LR_ACTOR  = 0.0001# 0.0001
 LR_CRITIC = 0.0001 #0.0001
 WEIGHT_DECAY =  0.001
-BUFFER_SIZE = 1000000
-BATCH_SIZE = 1024 #128 #1024
+BUFFER_SIZE = 10000#<-100x less #1000000 #uses last 10k trials (100 steps each)
+BATCH_SIZE = 2048 #128 #1024
 discount_factor = 0.99 #0.9
-TAU = 0.005 #0.001
+TAU = 0.005 #0.005
 
 class Agent():
 
@@ -93,9 +93,9 @@ class Agent():
 			target_param.data.copy_(tau*local_param.data + (1.0-tau)*target_param.data)
 
 	def save_models(self):
-			# print('saving checkpoint')
-			self.actor.save_checkpoint()
-			self.critic.save_checkpoint()
+		# print('saving checkpoint')
+		self.actor.save_checkpoint()
+		self.critic.save_checkpoint()
 
 	def load_models(self):
 		self.actor.load_checkpoint()

@@ -9,9 +9,9 @@ import numpy as np
 
 
 class Actor(nn.Module): #create actor class and inherit from nn.Module
-	def __init__(self, state_size = 6, action_size = 9, nodes1 = 100, nodes2 = 50): #was 1000, 1000
+	def __init__(self, state_size = 6, action_size = 9, nodes1 = 400, nodes2 = 200): #was 1000, 1000
 		super(Actor,self).__init__() #need to run this because init func of nn.Module is not run upon inherit
-		self.checkpoint_file = "checkpoint/actor"
+		self.checkpoint_file = "checkpoint/actor_fast_test"
 		#Linear is a simple flat fuly connected
 		self.fc1 = nn.Linear(state_size, nodes1) #input current 13 state observations
 		self.fc2 = nn.Linear(nodes1, nodes2)  #arbitrarily choosing 64 nodes for hidden layer (probably too small)
@@ -63,14 +63,14 @@ class Actor(nn.Module): #create actor class and inherit from nn.Module
 		torch.save(self.state_dict(), self.checkpoint_file)
 
 	def load_checkpoint(self):
-		self.load_state_dict(torch.load("checkpoint/actor2"))
+		self.load_state_dict(torch.load("checkpoint/actor4"))
 
 #simple 2 HL critic
 class Critic(nn.Module):
 	"""Critic (Value) Model.""" 
-	def __init__(self, state_size = 6, action_size = 9, nodes1=200, nodes2 = 100): #was 1000, 1000
+	def __init__(self, state_size = 6, action_size = 9, nodes1=400, nodes2 = 200): #was 1000, 1000
 		super(Critic, self).__init__()
-		self.checkpoint_file = "checkpoint/critic"
+		self.checkpoint_file = "checkpoint/critic_fast_test"
 		self.fc1 = nn.Linear(state_size+action_size, nodes1)
 		self.fc2 = nn.Linear(nodes1, nodes2)
 		self.fc3 = nn.Linear(nodes2, 1)
@@ -89,7 +89,7 @@ class Critic(nn.Module):
 		torch.save(self.state_dict(), self.checkpoint_file)
 
 	def load_checkpoint(self):
-		self.load_state_dict(torch.load("checkpoint/critic2"))
+		self.load_state_dict(torch.load("checkpoint/critic4"))
 
 
 #pre 12/7/2020

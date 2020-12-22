@@ -10,7 +10,7 @@ def movingAverage(values,window):
 fig = plt.figure(0)
 rews = np.loadtxt("rewards")
 plt.ylabel('final distance from goal')
-rews = movingAverage(rews,500)
+rews = movingAverage(rews,250)
 # plt.plot(np.arange(1, len(rews) + 1), rews)
 plt.plot(np.arange(1, len(rews) + 1), rews)
 plt.xlabel('Trial #')
@@ -22,7 +22,7 @@ fig = plt.figure(1)
 closs = np.load("critic_loss.npy")
 # print(sum(closs))
 plt.ylabel("critic_loss")
-closs = movingAverage(closs,5000)
+closs = movingAverage(closs,500)
 i = 10000
 # i = 1
 # while closs[i] != 0:
@@ -36,7 +36,7 @@ fig = plt.figure(2)
 aloss = np.load("actor_loss.npy")
 # print(sum(aloss))
 plt.ylabel("actor_loss")
-aloss = movingAverage(aloss,5000)
+aloss = movingAverage(aloss,500)
 i = 10000
 # i = 1
 # while closs[i] != 0:

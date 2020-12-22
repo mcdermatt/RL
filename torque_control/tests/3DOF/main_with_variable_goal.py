@@ -12,8 +12,8 @@ from agent import Agent
 # doing reward from forward kinematics allows arm to spin an extra revolution ->bad 
 
 fidelity = 0.05 # seconds per step
-trials = 20000
-doneThresh = 0.01 #stop trial if theta gets within this distance
+trials = 100000
+doneThresh = 0.001 #stop trial if theta gets within this distance
 maxTrialLen = 100
 gravity = False
 friction = False
@@ -21,6 +21,7 @@ friction = False
 # action_scale = np.array([2,6,4]) #when gravity = True
 action_scale = np.array([0.1,0.1,0.1]) #can be much smaller when not fighting gravity
 # goal_pos = torch.Tensor([1,0.5,1.2]) #was cart, setting it to angles now
+warm_start = True
 save_progress = True
 
 #init CUDA
@@ -42,6 +43,8 @@ if friction == False:
 	sp.numerical_constants[12:] = 0
 
 agent = Agent(9,3)
+if warm_start:
+	agent.load_models()
 
 count = 0 #for actor and critic loss vectors
 actor_loss = np.zeros(trials*maxTrialLen)
@@ -125,7 +128,7 @@ for trial in range(trials):
 	if trial % 10 == 0:
 		if save_progress:
 			agent.save_models()
-			np.savetxt("rewards", rewardArr)
+			np.savetxt("rewards2", rewardArr)
 
-			np.save("actor_loss",actor_loss)
-			np.save("critic_loss",critic_loss)
+			np.save("actor_loss2",actor_loss)
+			np.save("critic_loss2",critic_loss)
