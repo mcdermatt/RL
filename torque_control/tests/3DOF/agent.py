@@ -11,10 +11,10 @@ device = torch.device("cuda:0")
 # device = torch.device("cpu")
 
 
-LR_ACTOR  = 0.0001# 0.0001
-LR_CRITIC = 0.0001 #0.0001
+LR_ACTOR  = 0.001# 0.0001
+LR_CRITIC = 0.001 #0.0001
 WEIGHT_DECAY =  0.001
-BUFFER_SIZE = 10000#<-100x less #1000000 #uses last 10k trials (100 steps each)
+BUFFER_SIZE = 1000000 #uses last 10k trials (100 steps each)
 BATCH_SIZE = 2048 #128 #1024
 discount_factor = 0.99 #0.9
 TAU = 0.005 #0.005

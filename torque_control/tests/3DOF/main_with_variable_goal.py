@@ -21,7 +21,7 @@ friction = False
 # action_scale = np.array([2,6,4]) #when gravity = True
 action_scale = np.array([0.1,0.1,0.1]) #can be much smaller when not fighting gravity
 # goal_pos = torch.Tensor([1,0.5,1.2]) #was cart, setting it to angles now
-warm_start = True
+warm_start = False #True
 save_progress = True
 
 #init CUDA
@@ -58,8 +58,10 @@ for trial in range(trials):
 	print("took ", tick, " ticks")
 	print("trial ", trial, " -------------------------------------")
 	#get initial states
-	goal_pos = torch.randn(3)
+	# goal_pos = torch.randn(3)
 	states = torch.randn(6) #simplify problem - start only in quadrant 1
+	goal_pos = states[:3] + 0.25*torch.randn(3) #make goal not too far from start
+
 	# states[3:] = torch.randn(3)
 	# states[3:] = torch.zeros(3) #start at zero velocity
 	next_states = states
@@ -101,9 +103,12 @@ for trial in range(trials):
 			# reward -= 10 #punishment for not finihsing
 			endDist = dist
 			done = 1
+
+		#NOT SURE IF THIS IS ACTUALLY HELPING!!!!! - could just be removing a lot of potentially useful data!!
 		# if dist < doneThresh and (abs(sp.x0[1]) < 0.1): #actual goal for 1dof -> go to this position and stop
-		if dist < doneThresh: #simple goal -> get to goal pos
-			done = 1
+		# if dist < doneThresh: #simple goal -> get to goal pos
+		# 	done = 1
+
 		done = torch.as_tensor(done)
 
 		# agent.step(states.cpu().numpy(), action.cpu().numpy(), reward.cpu().numpy(), next_states.cpu().numpy(), done.cpu().numpy())

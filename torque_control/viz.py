@@ -274,8 +274,12 @@ class viz:
 
 if __name__ == "__main__":
 
-	filename1 = "best_path.npy"
-	filename2 = "best_goal_path.npy"
+	# filename1 = "best_path.npy"
+	# filename2 = "best_goal_path.npy"
+
+	filename1 = "path.npy"
+	filename2 = "goal_path.npy"
+
 	path1 = np.load(filename1)
 	path2 = np.load(filename2)
 

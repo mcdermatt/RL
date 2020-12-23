@@ -17,9 +17,9 @@ else:
 	torch.set_default_tensor_type('torch.FloatTensor')
 	print("Running on the CPU")
 
-trialLim = 100
+trialLim = 10
 tickLim = 200
-thresh = 1 #0.5
+thresh = 0.1 #1
 #make sure these params are the same as checkpoint policy
 action_scale = 0.1
 gravity = False
@@ -78,7 +78,8 @@ for trial in range(trialLim):
 		# print(next_states)
 
 		dist = torch.sum(abs((goal_pos.cpu()-states[:3].cpu())**2))
-		if dist < thresh and torch.sum(abs(states[3:])) < 0.1 and tick>10:
+		# if dist < thresh and torch.sum(abs(states[3:])) < 0.1 and tick>10:
+		if dist < thresh and tick>10:
 			print("did that thing you like")
 			path = np.append(path, path_temp, axis=0)
 			goal_path = np.append(goal_path, goal_path_temp, axis=0)
@@ -90,9 +91,11 @@ for trial in range(trialLim):
 
 		#timeout
 		if tick == tickLim:
+			path = np.append(path, path_temp, axis=0)
+			goal_path = np.append(goal_path, goal_path_temp, axis=0)
 			done = 1
 
 		tick += 1
 
-np.save("best_path",path)
-np.save("best_goal_path",goal_path)
+np.save("path",path)
+np.save("goal_path",goal_path)
