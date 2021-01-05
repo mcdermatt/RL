@@ -23,7 +23,7 @@ else:
 trialLim = 100
 
 #make sure these params are the same as checkpoint policy
-action_scale = 3
+action_scale = 3 #0.01 #3
 
 agent = Agent(3,1) #pos, vel, goal pos
 agent.load_models()
@@ -31,6 +31,10 @@ agent.load_models()
 sp = statePredictor()
 sp.dt = 0.1
 sp.numPts = 2
+
+#EASY MODE 
+sp.numerical_constants[5:] = 0 #disable friction
+# sp.numerical_constants[4] = 0 #no gravity
 
 fig = plt.figure()
 ax = fig.add_subplot(111, xlim=(-1,1), ylim=(-1,1), zlim=(-1,1), projection='3d', autoscale_on=False)
@@ -73,7 +77,7 @@ while running:
 		goal, = plt.plot([np.sin(goal_pos.cpu().numpy()[0])],[0],[np.cos(goal_pos.cpu().numpy()[0])],'ro', markersize = 5)
 
 		plt.draw()
-		plt.pause(0.1)
+		plt.pause(0.05)
 		# plt.pause(0.03)
 		link.remove()
 		goal.remove()

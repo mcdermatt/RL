@@ -6,10 +6,9 @@ import torch.nn.functional as F
 import torch.nn as nn
 import torch.optim as optim
 import time
-from agent import Agent
-# from agent_nStepTD import Agent
-
-#converging as is
+# from agent import Agent
+from agent_nStepTD import Agent
+import collections
 
 fidelity = 0.1 #0.1 # seconds per step
 trials = 10000
@@ -17,6 +16,8 @@ doneThresh = 0.1 #stop trial of theta gets within this distance with low velocit
 maxTrialLen = 50
 action_scale = 3 #0.01 #3
 save_progress = True
+n = 3 #number of TD steps to take
+discount_factor = 0.9
 
 #init CUDA
 if torch.cuda.is_available():
@@ -57,6 +58,8 @@ for trial in range(trials):
 	# states = torch.zeros(2)
 	next_states = states
 
+	SARS_of_current_trial = collections.deque()
+
 	tick = 0
 	done = 0
 	while done != 1:
@@ -90,15 +93,25 @@ for trial in range(trials):
 			done = 1
 		done = torch.as_tensor(done)
 
-		agent.step(torch.cat((states,goal_pos), dim=0).cpu().numpy(), action.cpu().numpy(), reward.cpu().numpy(), torch.cat((next_states,goal_pos), dim=0).cpu().numpy(), done.cpu().numpy())
-		
-		# print("states = ",states)
-		# print("next_states = ", next_states)
+		e = agent.memory.experience(torch.cat((states,goal_pos), dim=0).cpu().numpy(), action.cpu().numpy(), reward.cpu().numpy(), torch.cat((next_states,goal_pos), dim=0).cpu().numpy(), done.cpu().numpy())
+		SARS_of_current_trial.append(e)
+		e.append()
+
+		#update rewards of past n trials
+		# TODO while tick < n we need to only partially update
+		if n > (tick+1):
+			for i in range(1,n):
+				a[tick-i].reward += a[tick].reward*discount_factor**(i)  
+
 
 		tick += 1
 		actor_loss[count] = agent.aLossOut #straight from critic
 		critic_loss[count] = agent.cLossOut	
 		count += 1	
+
+
+	agent.step(SARS_of_current_trial)
+		
 	print("goal = ", goal_pos, " states = ",states, " action = ", action.cpu().detach().numpy()[0])
 	
 	rewardArr = np.append(rewardArr, reward.cpu().numpy())

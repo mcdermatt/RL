@@ -64,7 +64,7 @@ class Actor(nn.Module): #create actor class and inherit from nn.Module
 		torch.save(self.state_dict(), self.checkpoint_file)
 
 	def load_checkpoint(self):
-		self.load_state_dict(torch.load("checkpoint/actor1"))
+		self.load_state_dict(torch.load("checkpoint/actor"))
 
 #simple 2 HL critic
 class Critic(nn.Module):
@@ -92,7 +92,7 @@ class Critic(nn.Module):
 		torch.save(self.state_dict(), self.checkpoint_file)
 
 	def load_checkpoint(self):
-		self.load_state_dict(torch.load("checkpoint/critic1"))
+		self.load_state_dict(torch.load("checkpoint/critic"))
 
 
 #pre 12/7/2020

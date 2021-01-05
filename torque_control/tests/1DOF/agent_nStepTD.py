@@ -4,20 +4,22 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 import torch.nn as nn
 import torch.optim as optim
-from replayBuffer import ReplayBuffer
+# from replayBuffer import ReplayBuffer
+from replayBuffer_nStepTD import ReplayBuffer
 from OUNoise import OUNoise
 
 device = torch.device("cuda:0")
 # device = torch.device("cpu")
 
 
-LR_ACTOR  = 0.001# 0.0001
+LR_ACTOR  = 0.0001# 0.0001
 LR_CRITIC = 0.001 #0.001
 WEIGHT_DECAY =  0.001
-BUFFER_SIZE = 10000 #1000000
-BATCH_SIZE = 2048 #4096 #128 #1024
+BUFFER_SIZE = 1000000
+BATCH_SIZE = 1000 #4096 #128 #1024
 discount_factor = 0.99 #0.9
 TAU = 0.005 #0.001
+# numSteps = 3 #number of steps in n-Step TD learning
 
 class Agent():
 
@@ -35,7 +37,6 @@ class Agent():
 		self.critic = Critic(state_size,action_size).to(device)
 		self.critic_target = Critic(state_size,action_size).to(device)
 		self.critic_optimizer = optim.Adam(self.critic.parameters(), lr = LR_CRITIC, weight_decay = WEIGHT_DECAY)
-		# self.critic_optimizer = optim.SGD(self.critic.parameters(), lr = LR_CRITIC, momentum = 0.9)
 
 		self.memory = ReplayBuffer(action_size, BUFFER_SIZE, BATCH_SIZE)
 
@@ -44,16 +45,17 @@ class Agent():
 		self.aLossOut = 0
 		self.cLossOut = 0
 
-	def step(self, state, action,reward,next_state,done, is_learning = True):
+	def step(self, e):
 		"""save experience to memory buffer"""
-		self.memory.add(state,action,reward,next_state,done)
+		self.memory.add(e)
 
 		#sample (returns numpy array)
-		if len(self.memory) > BATCH_SIZE and is_learning == True:
+		if len(self.memory) > BATCH_SIZE:
 			experiences = self.memory.sample()
-			self.learn(experiences, discount_factor)
+			self.learn(experiences, discount_factor,3)
 
-	def learn(self, experiences, discount_factor):
+	def learn(self, experiences, discount_factor, numSteps):
+		#these are all vectors of randomly chosen SARS
 		states, actions, rewards, next_states, dones = experiences
 
 		#critic-------------------------------
@@ -61,6 +63,38 @@ class Agent():
 		next_actions = self.actor_target(next_states)
 		next_Q = self.critic_target(next_states, next_actions)
 		Qprime = rewards + discount_factor*next_Q*(1-dones) #ignores result of samples that are at the end
+
+		#not going to work....
+		# i = 1
+		# while i < numSteps:
+
+		# 	print("next states = ", next_states)
+		# 	index = [i.state for i in self.memory.memory].index(next_states)
+		# 	print("index = ", index)
+		# 	experiences = self.memory[index]
+		# 	print("experiences = ",experiences)
+		# 	states, actions, rewards, next_states, dones = experiences
+		# 	print(dones)
+
+		# 	next_actions = self.actor_target(next_states)
+		# 	next_Q = self.critic_target(next_states, next_actions)
+		# 	Qprime += (discount_factor**(i+1))*next_Q*(1-dones) #ignores result of samples that are at the end
+
+		# 	#current state is end of trial
+		# 	if dones != 0:
+		# 		break
+		# 	i += 1
+
+		# # closs = nn.SmoothL1Loss() #switched to this because I was getting negative actor loss (not possible)
+		# closs = nn.MSELoss() #most commonly used loss metric but error potentially explodes if there are outliars
+		# critic_loss = closs(Qvals,Qprime) #+ torch.rand(1) #+ 0.1*torch.rand(1) #ADD NOISE TO CRITIC
+	
+		# self.cLossOut = critic_loss.cpu().detach().numpy()
+	
+		# self.critic_optimizer.zero_grad()
+		# critic_loss.backward()
+		# # torch.nn.utils.clip_grad_norm_(self.critic.parameters(), 4) #test- grad clipping
+		# self.critic_optimizer.step()
 
 		# closs = nn.SmoothL1Loss() #switched to this because I was getting negative actor loss (not possible)
 		closs = nn.MSELoss() #most commonly used loss metric but error potentially explodes if there are outliars
@@ -72,6 +106,20 @@ class Agent():
 		critic_loss.backward()
 		# torch.nn.utils.clip_grad_norm_(self.critic.parameters(), 4) #test- grad clipping
 		self.critic_optimizer.step()
+
+		# actor-------------------------------
+		actions_pred = self.actor(states)
+		actor_loss = -self.critic(states, actions_pred).mean()
+		self.aLossOut = actor_loss.cpu().detach().numpy()
+
+		# Minimize the loss
+		self.actor_optimizer.zero_grad()
+		actor_loss.backward()
+		# torch.nn.utils.clip_grad_norm_(self.actor.parameters(), 4) #test- grad clipping
+		self.actor_optimizer.step()
+
+		self.soft_update(self.critic, self.critic_target, TAU)
+		self.soft_update(self.actor, self.actor_target, TAU)               
 
 		# actor-------------------------------
 		actions_pred = self.actor(states)
