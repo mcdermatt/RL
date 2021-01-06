@@ -20,7 +20,7 @@ else:
 	torch.set_default_tensor_type('torch.FloatTensor')
 	print("Running on the CPU")
 
-trialLim = 100
+trialLim = 250
 
 #make sure these params are the same as checkpoint policy
 action_scale = 3 #0.01 #3
@@ -29,7 +29,7 @@ agent = Agent(3,1) #pos, vel, goal pos
 agent.load_models()
 
 sp = statePredictor()
-sp.dt = 0.1
+sp.dt = 0.01
 sp.numPts = 2
 
 #EASY MODE 
@@ -73,14 +73,16 @@ while running:
 		next_states = sp.predict()[1]
 		next_states = torch.as_tensor(next_states)
 
-		link, = plt.plot([0,np.sin(states.cpu().numpy()[0])],[0,0],[0,np.cos(states.cpu().numpy()[0])], 'b-', lw = 6)
-		goal, = plt.plot([np.sin(goal_pos.cpu().numpy()[0])],[0],[np.cos(goal_pos.cpu().numpy()[0])],'ro', markersize = 5)
+		#only plot every other to keep time realistic
+		if tick%3 == 0:
+			link, = plt.plot([0,np.sin(states.cpu().numpy()[0])],[0,0],[0,np.cos(states.cpu().numpy()[0])], 'b-', lw = 6)
+			goal, = plt.plot([np.sin(goal_pos.cpu().numpy()[0])],[0],[np.cos(goal_pos.cpu().numpy()[0])],'ro', markersize = 5)
 
-		plt.draw()
-		plt.pause(0.05)
-		# plt.pause(0.03)
-		link.remove()
-		goal.remove()
+			plt.draw()
+			plt.pause(0.01)
+			# plt.pause(0.03)
+			link.remove()
+			goal.remove()
 
 		#timeout
 		if tick == trialLim:

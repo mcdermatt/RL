@@ -12,11 +12,11 @@ device = torch.device("cuda:0")
 # device = torch.device("cpu")
 
 
-LR_ACTOR  = 0.0001# 0.0001
+LR_ACTOR  = 0.001# 0.0001
 LR_CRITIC = 0.001 #0.001
 WEIGHT_DECAY =  0.001
-BUFFER_SIZE = 1000000
-BATCH_SIZE = 1000 #4096 #128 #1024
+BUFFER_SIZE = 50000 #1000000
+BATCH_SIZE = 4096 #128 #1024
 discount_factor = 0.99 #0.9
 TAU = 0.005 #0.001
 # numSteps = 3 #number of steps in n-Step TD learning
@@ -62,7 +62,8 @@ class Agent():
 		Qvals = self.critic(states,actions)
 		next_actions = self.actor_target(next_states)
 		next_Q = self.critic_target(next_states, next_actions)
-		Qprime = rewards + discount_factor*next_Q*(1-dones) #ignores result of samples that are at the end
+		# Qprime = rewards + discount_factor*next_Q*(1-dones) #ignores result of samples that are at the end
+		Qprime = rewards 
 
 		#not going to work....
 		# i = 1

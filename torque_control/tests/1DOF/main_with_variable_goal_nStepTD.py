@@ -10,14 +10,14 @@ import time
 from agent_nStepTD import Agent
 import collections
 
-fidelity = 0.1 #0.1 # seconds per step
+fidelity = 0.01 #0.1 # seconds per step
 trials = 10000
-doneThresh = 0.1 #stop trial of theta gets within this distance with low velocity
-maxTrialLen = 50
+doneThresh = 0.1 #stop trial if theta gets within this distance with low velocity
+maxTrialLen = 250
 action_scale = 3 #0.01 #3
 save_progress = True
-n = 3 #number of TD steps to take
-discount_factor = 0.9
+n = 30 #number of TD steps to take
+discount_factor = 0.875 #0.9
 
 #init CUDA
 if torch.cuda.is_available():
@@ -95,21 +95,33 @@ for trial in range(trials):
 
 		e = agent.memory.experience(torch.cat((states,goal_pos), dim=0).cpu().numpy(), action.cpu().numpy(), reward.cpu().numpy(), torch.cat((next_states,goal_pos), dim=0).cpu().numpy(), done.cpu().numpy())
 		SARS_of_current_trial.append(e)
-		e.append()
 
 		#update rewards of past n trials
 		# TODO while tick < n we need to only partially update
-		if n > (tick+1):
+		# 		or if we're lazy just don't share those with the main replayBuffer...
+		if tick > n:
 			for i in range(1,n):
-				a[tick-i].reward += a[tick].reward*discount_factor**(i)  
-
+				#want to do this
+				# SARS_of_current_trial[tick-i].reward += SARS_of_current_trial[tick].reward*discount_factor**(i)  
+				#namedTuples (exp) are immutable so we need a workaround
+				SARS_of_current_trial[tick-i] = agent.memory.experience(SARS_of_current_trial[tick-i].state, 
+																		SARS_of_current_trial[tick-i].action, 
+																		SARS_of_current_trial[tick-i].reward + SARS_of_current_trial[tick].reward*discount_factor**(i), 
+																		SARS_of_current_trial[tick-i].next_state, 
+																		SARS_of_current_trial[tick-i].done)
 
 		tick += 1
 		actor_loss[count] = agent.aLossOut #straight from critic
 		critic_loss[count] = agent.cLossOut	
 		count += 1	
 
-
+	#get rid of first n elements in SARS_of_current_trial (lazy mode)
+	if tick < n:
+		min_of_n_and_t = tick
+	else:
+		min_of_n_and_t = n
+	for _ in range(min_of_n_and_t):
+		SARS_of_current_trial.popleft()
 	agent.step(SARS_of_current_trial)
 		
 	print("goal = ", goal_pos, " states = ",states, " action = ", action.cpu().detach().numpy()[0])
