@@ -11,10 +11,10 @@ from agent import Agent
 
 #converging as is
 
-fidelity = 0.1 #0.1 # seconds per step
+fidelity = 0.01 #0.1 # seconds per step
 trials = 10000
 doneThresh = 0.1 #stop trial of theta gets within this distance with low velocity
-maxTrialLen = 50
+maxTrialLen = 250
 action_scale = 3 #0.01 #3
 save_progress = True
 

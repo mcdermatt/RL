@@ -11,8 +11,8 @@ device = torch.device("cuda:0")
 # device = torch.device("cpu")
 
 
-LR_ACTOR  = 0.001# 0.0001
-LR_CRITIC = 0.001 #0.001
+LR_ACTOR  = 0.01# 0.0001
+LR_CRITIC = 0.01 #0.001
 WEIGHT_DECAY =  0.001
 BUFFER_SIZE = 10000 #1000000
 BATCH_SIZE = 2048 #4096 #128 #1024
@@ -60,7 +60,11 @@ class Agent():
 		Qvals = self.critic(states,actions)
 		next_actions = self.actor_target(next_states)
 		next_Q = self.critic_target(next_states, next_actions)
+		#was this
 		Qprime = rewards + discount_factor*next_Q*(1-dones) #ignores result of samples that are at the end
+
+		#test
+		# Qprime = rewards + discount_factor*next_Q*(1-dones) - Qvals #might not need to subtract Qvals, loss will take care of that?
 
 		# closs = nn.SmoothL1Loss() #switched to this because I was getting negative actor loss (not possible)
 		closs = nn.MSELoss() #most commonly used loss metric but error potentially explodes if there are outliars

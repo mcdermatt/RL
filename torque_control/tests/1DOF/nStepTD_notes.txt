@@ -1,0 +1,6 @@
+The higher the number of steps, the more the agent is punished for overshooting
+
+http://rail.eecs.berkeley.edu/deeprlcourse-fa17/f17docs/lecture_5_actor_critic_pdf
+
+Advantage = Q - Average Value of that state
+A(s,a) = Q(s,a) - V(s)

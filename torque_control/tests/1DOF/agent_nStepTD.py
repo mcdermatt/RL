@@ -12,14 +12,13 @@ device = torch.device("cuda:0")
 # device = torch.device("cpu")
 
 
-LR_ACTOR  = 0.001# 0.0001
-LR_CRITIC = 0.001 #0.001
+LR_ACTOR  = 0.001 #0.001
+LR_CRITIC = 0.01 #0.001 
 WEIGHT_DECAY =  0.001
-BUFFER_SIZE = 50000 #1000000
-BATCH_SIZE = 4096 #128 #1024
-discount_factor = 0.99 #0.9
-TAU = 0.005 #0.001
-# numSteps = 3 #number of steps in n-Step TD learning
+BUFFER_SIZE = 5000000
+BATCH_SIZE =  4096 #65536 #128 #1024
+TAU = 0.0025 #0.001
+# discount_factor = 0.99
 
 class Agent():
 
@@ -52,9 +51,9 @@ class Agent():
 		#sample (returns numpy array)
 		if len(self.memory) > BATCH_SIZE:
 			experiences = self.memory.sample()
-			self.learn(experiences, discount_factor,3)
+			self.learn(experiences, 3)
 
-	def learn(self, experiences, discount_factor, numSteps):
+	def learn(self, experiences, numSteps):
 		#these are all vectors of randomly chosen SARS
 		states, actions, rewards, next_states, dones = experiences
 
@@ -62,8 +61,12 @@ class Agent():
 		Qvals = self.critic(states,actions)
 		next_actions = self.actor_target(next_states)
 		next_Q = self.critic_target(next_states, next_actions)
-		# Qprime = rewards + discount_factor*next_Q*(1-dones) #ignores result of samples that are at the end
+
+		#was this
 		Qprime = rewards 
+
+		#trying Advantage (?)
+		# Qprime = rewards + discount_factor*next_Q - Qvals
 
 		#not going to work....
 		# i = 1
@@ -97,8 +100,8 @@ class Agent():
 		# # torch.nn.utils.clip_grad_norm_(self.critic.parameters(), 4) #test- grad clipping
 		# self.critic_optimizer.step()
 
-		# closs = nn.SmoothL1Loss() #switched to this because I was getting negative actor loss (not possible)
-		closs = nn.MSELoss() #most commonly used loss metric but error potentially explodes if there are outliars
+		closs = nn.SmoothL1Loss() #switched to this because I was getting negative actor loss (not possible)
+		# closs = nn.MSELoss() #most commonly used loss metric but error potentially explodes if there are outliars
 		critic_loss = closs(Qvals,Qprime) #+ torch.rand(1) #+ 0.1*torch.rand(1) #ADD NOISE TO CRITIC
 	
 		self.cLossOut = critic_loss.cpu().detach().numpy()

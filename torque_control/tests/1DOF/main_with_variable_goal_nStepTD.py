@@ -10,14 +10,20 @@ import time
 from agent_nStepTD import Agent
 import collections
 
+#TODO - do I need to chop off the end??
+#TODO learn how to use scheduler
+#TODO dynamically lower maxTrialLen
+#ONLY STEPPING ONCE AFTER EVERY TRIAL .... -> make so I step after every  n?
+#TODO Figure out what to do about rewards -> use advantage?
+
 fidelity = 0.01 #0.1 # seconds per step
-trials = 10000
-doneThresh = 0.1 #stop trial if theta gets within this distance with low velocity
-maxTrialLen = 250
-action_scale = 3 #0.01 #3
+trials = 1000 #50000
+doneThresh = 0.01 #0.1 #stop trial if theta gets within this distance with low velocity
+maxTrialLen = 500
+action_scale = 3 
 save_progress = True
-n = 30 #number of TD steps to take
-discount_factor = 0.875 #0.9
+n = 4 #100 #15 #30 #number of TD steps to take
+discount_factor = 0.99 #0.5  #0.95
 
 #init CUDA
 if torch.cuda.is_available():
@@ -54,8 +60,8 @@ for trial in range(trials):
 	print("trial ", trial, " -------------------------------------")
 	#get initial states
 	goal_pos = torch.randn(1)
+	# goal_pos = torch.zeros(1) #easy mode
 	states = torch.randn(2)
-	# states = torch.zeros(2)
 	next_states = states
 
 	SARS_of_current_trial = collections.deque()
@@ -85,12 +91,14 @@ for trial in range(trials):
 		reward = -(abs(states[0] - goal_pos)**2) #- 0.1*abs(states[1]) #test velocity
 		reward = torch.as_tensor(reward)
 
-		if tick == maxTrialLen:
+		if tick == maxTrialLen: #timeout
 			# reward -= 10 #punishment for not finihsing
 			done = 1
-		if (abs(sp.x0[0] - goal_pos)) < doneThresh and (abs(sp.x0[1]) < 0.1): #actual goal for 1dof -> go to this position and stop
+		#reaches goal
+		# if (abs(sp.x0[0] - goal_pos)) < doneThresh and (abs(sp.x0[1]) < 0.1): #actual goal for 1dof -> go to this position and stop
 		# if abs(sp.x0[0]) > goal_pos and abs(sp.x0[1]) < 0.1 : #simple goal -> get 2.5 rad away from 0 and stop moving
-			done = 1
+			# done = 1
+		
 		done = torch.as_tensor(done)
 
 		e = agent.memory.experience(torch.cat((states,goal_pos), dim=0).cpu().numpy(), action.cpu().numpy(), reward.cpu().numpy(), torch.cat((next_states,goal_pos), dim=0).cpu().numpy(), done.cpu().numpy())
@@ -101,12 +109,36 @@ for trial in range(trials):
 		# 		or if we're lazy just don't share those with the main replayBuffer...
 		if tick > n:
 			for i in range(1,n):
-				#want to do this
+
+				agent.actor.eval()
+				with torch.no_grad():
+					next_action = agent.actor(torch.cat((states,goal_pos),dim=0).unsqueeze(0)) #unsqueeze: tensor([]) -> tensor([[]])
+					# print("next action will be ", next_action)
+					# next_action = next_action.cpu().numpy()
+				agent.actor.train()
+
+				agent.critic.eval()
+				with torch.no_grad():
+					next_states_and_goal = torch.cat((next_states,goal_pos),dim=0).unsqueeze(0).float()
+					crit1 = agent.critic(next_states_and_goal,next_action).cpu().numpy()
+					
+					current_states_and_goal = torch.cat((states,goal_pos),dim=0).unsqueeze(0).float()
+					crit2 = agent.critic(current_states_and_goal,action).cpu().numpy()
+					# print("critic says ", crit2 )
+				agent.critic.train()
+
+				#advantage is not the right term but YOLO
+				advantage = SARS_of_current_trial[tick-i].reward + SARS_of_current_trial[tick].reward*discount_factor**(i) \
+																 + (discount_factor**i)*crit1 \
+																 - crit2
+
+				#want to do this:
 				# SARS_of_current_trial[tick-i].reward += SARS_of_current_trial[tick].reward*discount_factor**(i)  
 				#namedTuples (exp) are immutable so we need a workaround
 				SARS_of_current_trial[tick-i] = agent.memory.experience(SARS_of_current_trial[tick-i].state, 
 																		SARS_of_current_trial[tick-i].action, 
-																		SARS_of_current_trial[tick-i].reward + SARS_of_current_trial[tick].reward*discount_factor**(i), 
+																		# SARS_of_current_trial[tick-i].reward + SARS_of_current_trial[tick].reward*discount_factor**(i), #was this
+																		advantage,
 																		SARS_of_current_trial[tick-i].next_state, 
 																		SARS_of_current_trial[tick-i].done)
 
@@ -122,6 +154,15 @@ for trial in range(trials):
 		min_of_n_and_t = n
 	for _ in range(min_of_n_and_t):
 		SARS_of_current_trial.popleft()
+
+	#TODO figure out a way to do this that does not remove good results - right now I am just making the finish threshold really small
+	for _ in range(n):
+		try:
+			SARS_of_current_trial.pop()
+		except:
+			pass
+
+	#only occurs once a trial -> SLOW
 	agent.step(SARS_of_current_trial)
 		
 	print("goal = ", goal_pos, " states = ",states, " action = ", action.cpu().detach().numpy()[0])

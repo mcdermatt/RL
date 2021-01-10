@@ -12,6 +12,7 @@ rews = np.loadtxt("rewards")
 plt.ylabel('final distance from goal')
 rews = movingAverage(rews,50)
 # plt.plot(np.arange(1, len(rews) + 1), rews)
+plt.ylim((-10,1))
 plt.plot(np.arange(1, len(rews) + 1), rews)
 plt.xlabel('Trial #')
 # plt.savefig(filename)
@@ -27,7 +28,7 @@ closs = movingAverage(closs,500)
 # i = 1
 # while closs[i] != 0:
 # 	i += 1
-plt.plot(np.arange(1,len(closs)+1), closs)
+plt.plot(np.arange(1,len(closs)+1), np.log(closs))
 # plt.plot(np.arange(1,len(closs[:i])+1), closs[:i])
 plt.xlabel("Step #")
 
@@ -41,7 +42,7 @@ i = 10000
 # i = 1
 # while closs[i] != 0:
 # 	i += 1
-plt.plot(np.arange(1,len(aloss)+1), aloss)
+plt.plot(np.arange(1,len(aloss)+1), np.log(aloss))
 # plt.plot(np.arange(1,len(closs[:i])+1), closs[:i])
 plt.xlabel("Step #")
 
