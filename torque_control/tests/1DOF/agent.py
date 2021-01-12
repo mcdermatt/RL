@@ -11,47 +11,55 @@ device = torch.device("cuda:0")
 # device = torch.device("cpu")
 
 
-LR_ACTOR  = 0.01# 0.0001
-LR_CRITIC = 0.01 #0.001
-WEIGHT_DECAY =  0.001
-BUFFER_SIZE = 10000 #1000000
-BATCH_SIZE = 2048 #4096 #128 #1024
-discount_factor = 0.99 #0.9
-TAU = 0.005 #0.001
+lrActor  = 0.0001
+lrCritic = 0.001
+BUFFER_SIZE = 200000 #1000000 #TODO FIGURE OUT OPTIMAL SIZE
+BATCH_SIZE = 128 #128 #1024
+discount_factor = 0.9 #0.99
+TAU = 0.01 #0.001
 
 class Agent():
 
-	def __init__(self, state_size, action_size):
+	def __init__(self, state_size, action_size, LR_ACTOR = lrActor, LR_CRITIC = lrCritic, BATCH_SIZE = BATCH_SIZE, gamma = discount_factor):
 
 		self.state_size = state_size
 		self.action_size = action_size
+		self.lr_critic = LR_CRITIC
+		self.lr_actor = LR_ACTOR
+		self.batch_size = BATCH_SIZE
+		self.discount_factor = gamma
 
 		#init actor
 		self.actor = Actor(state_size,action_size).to(device)
 		self.actor_target = Actor(state_size,action_size).to(device)
-		self.actor_optimizer = optim.Adam(self.actor.parameters(), lr = LR_ACTOR)
-		# self.actor_optimizer = optim.SGD(self.actor.parameters(), lr = LR_ACTOR, momentum = 0.9)
 		#init critic
 		self.critic = Critic(state_size,action_size).to(device)
 		self.critic_target = Critic(state_size,action_size).to(device)
-		self.critic_optimizer = optim.Adam(self.critic.parameters(), lr = LR_CRITIC, weight_decay = WEIGHT_DECAY)
-		# self.critic_optimizer = optim.SGD(self.critic.parameters(), lr = LR_CRITIC, momentum = 0.9)
 
-		self.memory = ReplayBuffer(action_size, BUFFER_SIZE, BATCH_SIZE)
+		#Initialize the target networks as copies of the original networks
+		for target_param, param in zip(self.actor_target.parameters(), self.actor.parameters()):
+			target_param.data.copy_(param.data)
+		for target_param, param in zip(self.critic_target.parameters(), self.critic.parameters()):
+			target_param.data.copy_(param.data)
+		
+		self.critic_optimizer = optim.Adam(self.critic.parameters(), lr = self.lr_critic)
+		self.actor_optimizer = optim.Adam(self.actor.parameters(), lr = self.lr_actor)
+
+		self.memory = ReplayBuffer(action_size, BUFFER_SIZE, self.batch_size)
 
 		self.noise = OUNoise(action_size)
 
 		self.aLossOut = 0
 		self.cLossOut = 0
 
-	def step(self, state, action,reward,next_state,done, is_learning = True):
+	def step(self, state, action,reward,next_state,done):
 		"""save experience to memory buffer"""
 		self.memory.add(state,action,reward,next_state,done)
 
 		#sample (returns numpy array)
-		if len(self.memory) > BATCH_SIZE and is_learning == True:
+		if len(self.memory) > self.batch_size:
 			experiences = self.memory.sample()
-			self.learn(experiences, discount_factor)
+			self.learn(experiences, self.discount_factor)
 
 	def learn(self, experiences, discount_factor):
 		states, actions, rewards, next_states, dones = experiences
@@ -61,7 +69,7 @@ class Agent():
 		next_actions = self.actor_target(next_states)
 		next_Q = self.critic_target(next_states, next_actions)
 		#was this
-		Qprime = rewards + discount_factor*next_Q*(1-dones) #ignores result of samples that are at the end
+		Qprime = rewards + self.discount_factor*next_Q #ignores result of samples that are at the end
 
 		#test
 		# Qprime = rewards + discount_factor*next_Q*(1-dones) - Qvals #might not need to subtract Qvals, loss will take care of that?
@@ -74,7 +82,6 @@ class Agent():
 	
 		self.critic_optimizer.zero_grad()
 		critic_loss.backward()
-		# torch.nn.utils.clip_grad_norm_(self.critic.parameters(), 4) #test- grad clipping
 		self.critic_optimizer.step()
 
 		# actor-------------------------------
@@ -85,11 +92,10 @@ class Agent():
 		# Minimize the loss
 		self.actor_optimizer.zero_grad()
 		actor_loss.backward()
-		# torch.nn.utils.clip_grad_norm_(self.actor.parameters(), 4) #test- grad clipping
 		self.actor_optimizer.step()
 
 		self.soft_update(self.critic, self.critic_target, TAU)
-		self.soft_update(self.actor, self.actor_target, TAU)                     
+		self.soft_update(self.actor, self.actor_target, TAU)	 
 
 	def soft_update(self, local_model, target_model, tau):
 		"""θ_target = τ*θ_local + (1 - τ)*θ_target"""

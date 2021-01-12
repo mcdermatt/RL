@@ -2,29 +2,32 @@ import numpy as np
 import copy
 import random
 
-class OUNoise:
-    """Ornstein-Uhlenbeck process."""
-    # mu = 0 -> first moment = mean
-    # theta = 0.4
-    # sigma = 0.2
-
-    def __init__(self, size, seed = 1, mu=0., theta=0.4, sigma=0.02):
-        """Initialize parameters and noise process."""
-        self.mu = mu * np.ones(size)
-        self.theta = theta
-        self.sigma = sigma
-        # self.seed = random.seed(seed)
+"""
+Taken from https://github.com/vitchyr/rlkit/blob/master/rlkit/exploration_strategies/ou_strategy.py
+"""
+class OUNoise(object):
+    def __init__(self, actions, mu=0.0, theta=0.15, max_sigma=0.3, min_sigma=0.3, decay_period=100000):
+        self.mu           = mu
+        self.theta        = theta
+        self.sigma        = max_sigma
+        self.max_sigma    = max_sigma
+        self.min_sigma    = min_sigma
+        self.decay_period = decay_period
+        self.action_dim   = actions #action_space.shape[0]
+        self.low          = -1#-3 #action_space.low
+        self.high         = 1 #3 #action_space.high
         self.reset()
-
+        
     def reset(self):
-        """Reset the internal state (= noise) to mean (mu)."""
-        self.state = copy.copy(self.mu)
-
-    def sample(self):
-        """Update internal state and return it as a noise sample."""
-        x = self.state
-        #not normally distributed random: sus
-        # dx = self.theta * (self.mu - x) + self.sigma * np.array([random.random() for i in range(len(x))])
-        dx = self.theta * (self.mu - x) + self.sigma * np.array([np.random.randn() for i in range(len(x))])
+        self.state = np.ones(self.action_dim) * self.mu
+        
+    def evolve_state(self):
+        x  = self.state
+        dx = self.theta * (self.mu - x) + self.sigma * np.random.randn(self.action_dim)
         self.state = x + dx
         return self.state
+    
+    def get_action(self, action, t=0): 
+        ou_state = self.evolve_state()
+        self.sigma = self.max_sigma - (self.max_sigma - self.min_sigma) * min(1.0, t / self.decay_period)
+        return np.clip(action + ou_state, self.low, self.high)

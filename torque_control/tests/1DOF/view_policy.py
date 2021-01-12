@@ -20,7 +20,7 @@ else:
 	torch.set_default_tensor_type('torch.FloatTensor')
 	print("Running on the CPU")
 
-trialLim = 500 #250
+trialLim = 50 #250
 
 #make sure these params are the same as checkpoint policy
 action_scale = 3 #0.01 #3
@@ -51,8 +51,8 @@ base, = plt.plot([0],[0],[0],'bo', markersize = 8)
 
 tick = 0
 running = True
+states = torch.randn(2)
 while running:
-	states = torch.randn(2)
 	goal_pos = torch.randn(1)
 	# goal_pos = torch.zeros(1) #easy mode
 	next_states = states

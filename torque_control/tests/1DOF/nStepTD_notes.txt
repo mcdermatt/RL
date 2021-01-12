@@ -4,3 +4,9 @@ http://rail.eecs.berkeley.edu/deeprlcourse-fa17/f17docs/lecture_5_actor_critic_p
 
 Advantage = Q - Average Value of that state
 A(s,a) = Q(s,a) - V(s)
+
+
+p197 sutton and barto 2nd ed
+also see chapter 11
+
+^n-step might not actually be a good idea

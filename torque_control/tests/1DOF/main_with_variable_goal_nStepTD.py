@@ -6,7 +6,6 @@ import torch.nn.functional as F
 import torch.nn as nn
 import torch.optim as optim
 import time
-# from agent import Agent
 from agent_nStepTD import Agent
 import collections
 
@@ -17,13 +16,13 @@ import collections
 #TODO Figure out what to do about rewards -> use advantage?
 
 fidelity = 0.01 #0.1 # seconds per step
-trials = 1000 #50000
-doneThresh = 0.01 #0.1 #stop trial if theta gets within this distance with low velocity
+trials = 50000 #50000
+doneThresh = 0.01 #not used
 maxTrialLen = 500
 action_scale = 3 
 save_progress = True
-n = 4 #100 #15 #30 #number of TD steps to take
-discount_factor = 0.99 #0.5  #0.95
+n = 30 #100 #15 #30 #number of TD steps to take
+discount_factor = 0.5  #0.99
 
 #init CUDA
 if torch.cuda.is_available():
@@ -48,9 +47,9 @@ sp.numerical_constants[5:] = 0 #disable friction
 count = 0
 rewardArr = np.zeros(1)
 
-actor_loss = np.zeros(trials*maxTrialLen)
-critic_loss = np.zeros(trials*maxTrialLen)
-action_vec = np.zeros(trials*maxTrialLen)
+actor_loss = np.empty(trials*maxTrialLen)
+critic_loss = np.empty(trials*maxTrialLen)
+action_vec = np.empty(trials*maxTrialLen)
 tick = 0
 
 agent = Agent(3,1) #pos, vel, goal_pos
@@ -96,8 +95,6 @@ for trial in range(trials):
 			done = 1
 		#reaches goal
 		# if (abs(sp.x0[0] - goal_pos)) < doneThresh and (abs(sp.x0[1]) < 0.1): #actual goal for 1dof -> go to this position and stop
-		# if abs(sp.x0[0]) > goal_pos and abs(sp.x0[1]) < 0.1 : #simple goal -> get 2.5 rad away from 0 and stop moving
-			# done = 1
 		
 		done = torch.as_tensor(done)
 
@@ -107,38 +104,44 @@ for trial in range(trials):
 		#update rewards of past n trials
 		# TODO while tick < n we need to only partially update
 		# 		or if we're lazy just don't share those with the main replayBuffer...
+		E = 0
+		alpha = 0.5
+		gamma = 0.9 #TODO remember why I need both gamma and lambda discount factors
 		if tick > n:
-			for i in range(1,n):
+			for i in range(1,n): #TODO make sure this should start at 1 not 0
 
-				agent.actor.eval()
-				with torch.no_grad():
-					next_action = agent.actor(torch.cat((states,goal_pos),dim=0).unsqueeze(0)) #unsqueeze: tensor([]) -> tensor([[]])
-					# print("next action will be ", next_action)
-					# next_action = next_action.cpu().numpy()
-				agent.actor.train()
+				# agent.actor.eval()
+				# with torch.no_grad():
+				# 	next_action = agent.actor(torch.cat((states,goal_pos),dim=0).unsqueeze(0)) #unsqueeze: tensor([]) -> tensor([[]])
+				# agent.actor.train()
 
-				agent.critic.eval()
-				with torch.no_grad():
-					next_states_and_goal = torch.cat((next_states,goal_pos),dim=0).unsqueeze(0).float()
-					crit1 = agent.critic(next_states_and_goal,next_action).cpu().numpy()
-					
-					current_states_and_goal = torch.cat((states,goal_pos),dim=0).unsqueeze(0).float()
-					crit2 = agent.critic(current_states_and_goal,action).cpu().numpy()
-					# print("critic says ", crit2 )
-				agent.critic.train()
+				# agent.critic.eval()
+				# with torch.no_grad():
+				# 	next_states_and_goal = torch.cat((next_states,goal_pos),dim=0).unsqueeze(0).float()
+				# 	crit_next = agent.critic(next_states_and_goal,next_action).cpu().numpy()
+				# 	current_states_and_goal = torch.cat((states,goal_pos),dim=0).unsqueeze(0).float()
+				# 	crit_current = agent.critic(current_states_and_goal,action).cpu().numpy()
+				# agent.critic.train()
 
-				#advantage is not the right term but YOLO
-				advantage = SARS_of_current_trial[tick-i].reward + SARS_of_current_trial[tick].reward*discount_factor**(i) \
-																 + (discount_factor**i)*crit1 \
-																 - crit2
+				# #attempt using n-step TD(?)
+				# #R(t+1) + γR(t+2) +...+ γR(t+n) + (γ**n)*V(t+n) Last term estimates rest of series
+				# advantage = SARS_of_current_trial[tick-i].reward + SARS_of_current_trial[tick].reward*discount_factor**(i) \
+				# 												 + (discount_factor**i)*crit_next \
+				# 												 - crit_current
+
+				#using n-step SARSA
+				# δ = R + γQ(S',A') - Q(S,A)
+				# delta = SARS_of_current_trial[tick-i].reward + gamma*crit_next - crit_current
+				# E = (1-alpha)*E + 1 #dutch traces
 
 				#want to do this:
 				# SARS_of_current_trial[tick-i].reward += SARS_of_current_trial[tick].reward*discount_factor**(i)  
 				#namedTuples (exp) are immutable so we need a workaround
 				SARS_of_current_trial[tick-i] = agent.memory.experience(SARS_of_current_trial[tick-i].state, 
 																		SARS_of_current_trial[tick-i].action, 
-																		# SARS_of_current_trial[tick-i].reward + SARS_of_current_trial[tick].reward*discount_factor**(i), #was this
-																		advantage,
+																		SARS_of_current_trial[tick-i].reward + SARS_of_current_trial[tick].reward*discount_factor**(i), #was this
+																		# advantage,
+																		# Q,
 																		SARS_of_current_trial[tick-i].next_state, 
 																		SARS_of_current_trial[tick-i].done)
 

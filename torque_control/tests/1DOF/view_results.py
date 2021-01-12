@@ -43,6 +43,7 @@ i = 10000
 # while closs[i] != 0:
 # 	i += 1
 plt.plot(np.arange(1,len(aloss)+1), np.log(aloss))
+# plt.plot(np.arange(1,len(aloss)+1), aloss)
 # plt.plot(np.arange(1,len(closs[:i])+1), closs[:i])
 plt.xlabel("Step #")
 
