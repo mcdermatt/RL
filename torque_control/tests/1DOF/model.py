@@ -65,7 +65,7 @@ class Actor(nn.Module): #create actor class and inherit from nn.Module
 		torch.save(self.state_dict(), self.checkpoint_file)
 
 	def load_checkpoint(self):
-		self.load_state_dict(torch.load("checkpoint/actorBest"))
+		self.load_state_dict(torch.load("checkpoint/actor"))
 
 
 #Trying this- I think critic needs to have action added in 2nd layer(?)
@@ -128,7 +128,7 @@ class Critic(nn.Module):
 		torch.save(self.state_dict(), self.checkpoint_file)
 
 	def load_checkpoint(self):
-		self.load_state_dict(torch.load("checkpoint/criticBest"))
+		self.load_state_dict(torch.load("checkpoint/critic"))
 
 
 #pre 12/7/2020

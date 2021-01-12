@@ -78,9 +78,9 @@ while running:
 
 		next_states = sp.predict()[1]
 		
-		xElbow = np.sin(next_states[1])*np.sin(next_states[0])
+		xElbow = np.sin(next_states[1])*np.cos(next_states[0])
 		zElbow = np.cos(next_states[1])
-		yElbow = np.sin(next_states[1])*np.cos(next_states[0])
+		yElbow = np.sin(next_states[1])*np.sin(next_states[0])
 		
 		xEE, zEE, yEE = FK(next_states[0],next_states[1],next_states[2])
 		goal_pos_cart = FK(goal_pos.cpu().numpy()[0],goal_pos.cpu().numpy()[2],goal_pos.cpu().numpy()[1])
@@ -104,14 +104,14 @@ while running:
 
 		print(next_states)
 
-		# link, = plt.plot(Xs,Ys,Zs, 'b-', lw = 6)
+		link, = plt.plot(Xs,Ys,Zs, 'b-', lw = 6)
 		EE, = plt.plot([xEE],[yEE],[zEE],'bo',markersize = 8) #temp
 		goal, = plt.plot([goal_pos_cart[0]],[goal_pos_cart[2]],[goal_pos_cart[2]],'ro', markersize = 5)
 
 		plt.draw()
 		plt.pause(0.1)
 		# plt.pause(0.03)
-		# link.remove()
+		link.remove()
 		EE.remove()
 		goal.remove()
 

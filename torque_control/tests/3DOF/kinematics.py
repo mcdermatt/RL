@@ -5,10 +5,10 @@ def FK(theta0, theta1, theta2):
 	l1 = 1
 	l2 = 1
 
-	d = l2*np.sin(theta1) + l2*np.sin(np.pi - theta1 - theta2)
+	d = l1*np.sin(theta1) + l2*np.sin(np.pi/2 - theta1 - theta2)
 
 	x = d*np.cos(theta0)
-	y = l1*np.cos(theta1)-l2*np.cos(np.pi-theta1-theta2)
+	y = l1*np.cos(theta1)-l2*np.cos(np.pi/2-theta1-theta2)
 	z = d*np.sin(theta0)
 
 	return np.array([x,y,z])

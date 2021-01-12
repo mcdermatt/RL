@@ -11,7 +11,7 @@ from agent import Agent
 
 # doing reward from forward kinematics allows arm to spin an extra revolution ->bad 
 
-fidelity = 0.1 # seconds per step
+fidelity = 0.01 # seconds per step
 trials = 10000
 doneThresh = 0.01 #stop trial if theta gets within this distance
 maxTrialLen = 50
@@ -55,7 +55,7 @@ for trial in range(trials):
 	print("took ", tick, " ticks")
 	print("trial ", trial, " -------------------------------------")
 	#get initial states
-	states = torch.randn(6) #simplify problem - start only in quadrant 1
+	states = torch.randn(6)
 	# states[3:] = torch.randn(3)
 	# states[3:] = torch.zeros(3) #start at zero velocity
 	next_states = states

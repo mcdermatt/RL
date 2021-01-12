@@ -33,7 +33,7 @@ sp.dt = 0.01
 sp.numPts = 2
 
 #EASY MODE 
-sp.numerical_constants[5:] = 0 #disable friction
+# sp.numerical_constants[5:] = 0 #disable friction
 # sp.numerical_constants[4] = 0 #no gravity
 
 fig = plt.figure()

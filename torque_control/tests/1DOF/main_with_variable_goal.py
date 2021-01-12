@@ -14,7 +14,7 @@ from torch.utils.tensorboard import SummaryWriter #to print to tensorboard
 #init hyperparameter search
 # batch_sizes = [128, 512]
 batch_sizes = [2048]
-learning_rates = [0.01]
+learning_rates = [0.001]
 # discount_factor = [0.99]
 
 fidelity = 0.01 #0.01 # seconds per step
@@ -38,13 +38,13 @@ noise = OUNoise(1)
 sp = statePredictor()
 sp.dt = fidelity
 sp.numPts = 2
-sp.numerical_constants[5:] = 0 #disable friction
+# sp.numerical_constants[5:] = 0 #disable friction
 # sp.numerical_constants[4] = 0 #no gravity
 
 
 for batch_size in batch_sizes:
 	for learning_rate in learning_rates:
-		writer = SummaryWriter(f'runs/test3/BatchSize {batch_size} LR {learning_rate} Nodes 16-16-16-16 Tau 0.01 DF 0.9 NO_DONE LINEAR_REWARD')
+		writer = SummaryWriter(f'runs/test4/BatchSize {batch_size} LR {learning_rate} Nodes 16-16-16-16 Tau 0.01 DF 0.9 NO_DONE LINEAR_REWARD')
 
 		agent = Agent(3,1, LR_ACTOR=learning_rate, LR_CRITIC=learning_rate, BATCH_SIZE=batch_size)
 		#init arrays for tracking results
@@ -88,8 +88,10 @@ for batch_size in batch_sizes:
 				next_states = torch.as_tensor(next_states)
 				states = torch.as_tensor(states)
 				# reward = -(abs(states[0] - goal_pos)**2)
+				# reward = -(abs(states[0] - goal_pos)**0.5)
 				reward = -(abs(states[0] - goal_pos))
 				reward = torch.as_tensor(reward)
+				dist = (abs(states[0] - goal_pos))
 
 				if tick == (maxTrialLen-1):
 					# reward -= 10 #punishment for not finihsing
@@ -109,7 +111,7 @@ for batch_size in batch_sizes:
 				critic_loss[count] = agent.cLossOut	
 				writer.add_scalar('Actor Loss',agent.aLossOut, global_step = count)
 				writer.add_scalar('Critic Loss',agent.cLossOut, global_step = count)
-				writer.add_scalar('Reward',-reward.cpu().numpy(), global_step = count)
+				writer.add_scalar('Reward',dist, global_step = count)
 				count += 1	
 
 			print("goal = ", goal_pos, " states = ",states, " action = ", action.cpu().detach().numpy()[0])
