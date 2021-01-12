@@ -14,7 +14,7 @@ from torch.utils.tensorboard import SummaryWriter #to print to tensorboard
 #init hyperparameter search
 # batch_sizes = [128, 512]
 batch_sizes = [2048]
-learning_rates = [0.001]
+learning_rates = [0.01]
 # discount_factor = [0.99]
 
 fidelity = 0.01 #0.01 # seconds per step
