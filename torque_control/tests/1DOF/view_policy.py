@@ -20,7 +20,7 @@ else:
 	torch.set_default_tensor_type('torch.FloatTensor')
 	print("Running on the CPU")
 
-trialLim = 50 #250
+trialLim = 5 #250
 
 #make sure these params are the same as checkpoint policy
 action_scale = 3 #0.01 #3
@@ -49,12 +49,15 @@ ax.set_ylabel('z')
 ax.set_zlabel('y')	
 base, = plt.plot([0],[0],[0],'bo', markersize = 8)
 
+count = torch.zeros(1)
 tick = 0
 running = True
 states = torch.randn(2)
 while running:
-	goal_pos = torch.randn(1)
-	# goal_pos = torch.zeros(1) #easy mode
+	# goal_pos = torch.randn(1) 				#random
+	# goal_pos = torch.zeros(1) 				#static
+	goal_pos = 2*torch.sin(count/50) 				#periodic
+
 	next_states = states
 
 	tick = 0
@@ -77,7 +80,7 @@ while running:
 		#only plot every other to keep time realistic
 		if tick%3 == 0:
 			link, = plt.plot([0,np.sin(states.cpu().numpy()[0])],[0,0],[0,np.cos(states.cpu().numpy()[0])], 'b-', lw = 6)
-			goal, = plt.plot([np.sin(goal_pos.cpu().numpy()[0])],[0],[np.cos(goal_pos.cpu().numpy()[0])],'ro', markersize = 5)
+			goal, = plt.plot([1.1*np.sin(goal_pos.cpu().numpy()[0])],[0],[1.1*np.cos(goal_pos.cpu().numpy()[0])],'ro', markersize = 5)
 
 			plt.draw()
 			plt.pause(0.01)
@@ -90,3 +93,4 @@ while running:
 			done = 1
 
 		tick += 1
+		count += 1

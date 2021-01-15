@@ -209,8 +209,8 @@ print("generated right_hand_side")
 x0 = zeros(6)
 #initial pos
 # x0[0] = deg2rad(30)
-x0[1] = deg2rad(120)
-x0[2] = deg2rad(90)
+x0[1] = deg2rad(-120)
+x0[2] = deg2rad(0)
 
 #initial vel
 # x0[3] = deg2rad(180)
@@ -242,8 +242,10 @@ numerical_constants = array([0.05,  # j0_length [m]
 
 #set joint torques to zero for first simulation
 numerical_specified = zeros(3)
-numerical_specified[1] = 1 #test torque
-numerical_constants[11] = 0 #no gravity
+numerical_specified[1] = 6 #15 test torques - 6,3 enough to inhibit motion
+numerical_specified[2] = 3 #7 test torques
+
+# numerical_constants[11] = 0 #no gravity
 args = {'constants': numerical_constants,
         'specified': numerical_specified}
 frames_per_sec = 60

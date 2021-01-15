@@ -9,7 +9,7 @@ import numpy as np
 
 
 class Actor(nn.Module): #create actor class and inherit from nn.Module
-	def __init__(self, state_size = 6, action_size = 9, nodes1 = 400, nodes2 = 200): #was 400, 200
+	def __init__(self, state_size = 6, action_size = 9, nodes1 = 512, nodes2 = 256): #was 400, 200
 		super(Actor,self).__init__() #need to run this because init func of nn.Module is not run upon inherit
 		self.checkpoint_file = "checkpoint/actor"
 		#Linear is a simple flat fuly connected
@@ -68,7 +68,7 @@ class Actor(nn.Module): #create actor class and inherit from nn.Module
 #simple 2 HL critic
 class Critic(nn.Module):
 	"""Critic (Value) Model.""" 
-	def __init__(self, state_size = 6, action_size = 9, nodes1=400, nodes2 = 200): #was 400, 200
+	def __init__(self, state_size = 6, action_size = 9, nodes1=512, nodes2 = 256): #was 400, 200
 		super(Critic, self).__init__()
 		self.checkpoint_file = "checkpoint/critic"
 		self.fc1 = nn.Linear(state_size+action_size, nodes1)

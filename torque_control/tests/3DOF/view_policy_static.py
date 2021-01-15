@@ -24,16 +24,18 @@ else:
 trialLim = 100
 
 #make sure these params are the same as checkpoint policy
-action_scale = 0.1
-goal_pos = torch.tensor([1,0.5,1.2])
-gravity = False
+# action_scale = 3 #no grav
+# goal_pos = torch.tensor([1,0.5,1.2]) #static
+action_scale = np.array([25,25,25]) #when gravity = True
+gravity = True
 friction = False
 
-agent = Agent(6,3)
+# agent = Agent(6,3) #static
+agent = Agent(9,3) #var
 agent.load_models()
 
 sp = statePredictor()
-sp.dt = 0.1
+sp.dt = 0.01
 sp.numPts = 2
 if gravity == False:
 	sp.numerical_constants[11] = 0
@@ -53,12 +55,16 @@ ax.set_ylabel('z')
 ax.set_zlabel('y')	
 base, = plt.plot([0],[0],[0],'go', markersize = 8)
 
+states = torch.randn(6)
+states[3:] = torch.zeros(3)
+
 tick = 0
 running = True
 while running:
-	states = torch.randn(6)
-	states[3:] = torch.zeros(3)
+
 	next_states = states
+	# goal_pos = states[:3] + 0.25*torch.randn(3) #make goal not too far from start
+	goal_pos = torch.randn(3)
 
 	tick = 0
 	done = 0
@@ -68,7 +74,8 @@ while running:
 
 		agent.actor.eval()
 		with torch.no_grad():
-			action = agent.actor(states.unsqueeze(0))
+			# action = agent.actor(states.unsqueeze(0)) #static
+			action = agent.actor(torch.cat((states,goal_pos), dim=0).unsqueeze(0)) #variable
 		agent.actor.train() #unlocks actor
 
 		# print("states = ", states, " action = ", action)
@@ -102,14 +109,15 @@ while running:
 		# Ys = [0, yEE]
 		# Zs = [0, zEE]
 
-		print(next_states)
+		# print(next_states)
+		print("action taken: ", action.cpu().numpy()*action_scale)
 
-		link, = plt.plot(Xs,Ys,Zs, 'b-', lw = 6)
+		link, = plt.plot(Xs,Ys,Zs, 'b-', lw = 2)
 		EE, = plt.plot([xEE],[yEE],[zEE],'bo',markersize = 8) #temp
 		goal, = plt.plot([goal_pos_cart[0]],[goal_pos_cart[2]],[goal_pos_cart[2]],'ro', markersize = 5)
 
 		plt.draw()
-		plt.pause(0.1)
+		plt.pause(0.01)
 		# plt.pause(0.03)
 		link.remove()
 		EE.remove()
