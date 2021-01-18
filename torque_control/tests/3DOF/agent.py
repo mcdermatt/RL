@@ -13,10 +13,10 @@ device = torch.device("cuda:0")
 
 lrActor  = 0.001# 0.0001
 lrCritic = 0.001 #0.0001
-WEIGHT_DECAY =  0.001
-BUFFER_SIZE = 1000000 #1000000 #uses last 10k trials (100 steps each)
+WEIGHT_DECAY =  0.01
+BUFFER_SIZE = 100000 #1000000 #uses last 10k trials (100 steps each)
 BATCH_SIZE = 256 #2048 #128 #1024
-discount_factor = 0.99 #0.99
+discount_factor = 0.9 #0.99
 TAU = 0.001 #0.005
 
 class Agent():
@@ -42,7 +42,7 @@ class Agent():
 			target_param.data.copy_(param.data)
 
 		self.actor_optimizer = optim.Adam(self.actor.parameters(), lr = self.lr_actor)
-		self.critic_optimizer = optim.Adam(self.critic.parameters(), lr = self.lr_critic) #do I need weight decay?
+		self.critic_optimizer = optim.Adam(self.critic.parameters(), lr = self.lr_critic, weight_decay = WEIGHT_DECAY) #do I need weight decay?
 
 		self.memory = ReplayBuffer(self.action_size, BUFFER_SIZE, self.batch_size)
 

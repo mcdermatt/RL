@@ -56,13 +56,15 @@ ax.set_zlabel('y')
 base, = plt.plot([0],[0],[0],'go', markersize = 8)
 
 states = torch.randn(6)
-states[3:] = torch.zeros(3)
+# states[3:] = torch.zeros(3)
 
 tick = 0
 running = True
 while running:
 
-	next_states = states
+	# next_states = states # continue from last pos
+	next_states = torch.randn(6) #start at random pos
+
 	# goal_pos = states[:3] + 0.25*torch.randn(3) #make goal not too far from start
 	goal_pos = torch.randn(3)
 

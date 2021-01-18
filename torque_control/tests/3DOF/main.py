@@ -12,8 +12,12 @@ from torch.utils.tensorboard import SummaryWriter #to print to tensorboard
 
 #NOTES:
 # doing reward from forward kinematics allows arm to spin an extra revolution ->bad 
+# Tau should be proportional to buffer size??!?
+# TODO make more than one learning step per update?
+# TODO autosave best policy
+# TODO parallelize
 
-batch_sizes = [2048]
+batch_sizes = [256]
 learning_rates = [0.001]
 
 #TOO SMALL!!!???
@@ -22,7 +26,7 @@ action_scale = np.array([25,25,25])
 # action_scale = np.array([0.1,0.1,0.1]) #can be much smaller when not fighting gravity
 
 fidelity = 0.01 # seconds per step
-trials = 10000
+trials = 100000
 maxTrialLen = 100
 gravity = True
 friction = False
@@ -55,7 +59,7 @@ count = 0 #for actor and critic loss vectors
 
 for batch_size in batch_sizes:
 	for learning_rate in learning_rates:
-		writer = SummaryWriter(f'runs/test2/BatchSize {batch_size} LR {learning_rate} Nodes 512-256-512-256 Tau 0.001 DF 0.99 LINEAR_REWARD Action 25-25-25 BUF1000000')
+		writer = SummaryWriter(f'runs/test3/BatchSize {batch_size} LR {learning_rate} Nodes 128-64-128-64 Tau 0.001 DF 0.9 LINEAR_REWARD BUF100000 DECAY_PERIOD 100k')
 		
 		#static goal
 		# agent = Agent(6, 3, LR_ACTOR = learning_rate, LR_CRITIC = learning_rate, BATCH_SIZE = batch_size)

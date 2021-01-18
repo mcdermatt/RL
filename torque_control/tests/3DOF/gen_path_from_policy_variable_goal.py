@@ -19,12 +19,12 @@ else:
 
 trialLim = 10
 tickLim = 200
-thresh = 0.1 #1
+thresh = 0.01 #0.1 #1
 #make sure these params are the same as checkpoint policy
-action_scale = 0.1
-gravity = False
+action_scale = action_scale = np.array([25,25,25])
+gravity = True
 friction = False
-fidelity = 0.05
+fidelity = 0.01
 
 agent = Agent(9,3)
 agent.load_models()
@@ -40,6 +40,11 @@ if friction == False:
 path = np.zeros([1,3])
 goal_path = np.zeros([1,3])
 
+#start at random pos
+states = torch.randn(6)
+
+count = torch.zeros(1)
+
 tick = 0
 running = True
 for trial in range(trialLim):
@@ -47,15 +52,22 @@ for trial in range(trialLim):
 	path_temp = np.zeros([1,3])
 	goal_path_temp = np.zeros([1,3])
 
-	states = torch.randn(6)
-	states[3:] = 0
-	goal_pos = torch.randn(3)
+	# states[3:] = 0
+	goal_pos_start = 0.5*torch.randn(3) #periodic
+	# goal_pos_start = states[:3] + torch.randn(3)
 
-	next_states = states
+	#start from last position of previous trial
+	next_states = states 
+
+	#start near goal pos at zero velocity
+	# next_states[:3] = goal_pos_start + 0.1*torch.randn(3)
+	# next_states[3:] = 0
 
 	tick = 0
 	done = 0
 	while done != 1:
+		goal_pos = 0.5*torch.sin(count/50) + goal_pos_start #periodic
+		# goal_pos = goal_pos_start #constant
 		states = next_states.float()
 		states = states.to(device)
 
@@ -78,16 +90,16 @@ for trial in range(trialLim):
 		# print(next_states)
 
 		dist = torch.sum(abs((goal_pos.cpu()-states[:3].cpu())**2))
-		# if dist < thresh and torch.sum(abs(states[3:])) < 0.1 and tick>10:
-		if dist < thresh and tick>10:
-			print("did that thing you like")
-			path = np.append(path, path_temp, axis=0)
-			goal_path = np.append(goal_path, goal_path_temp, axis=0)
-			done = 1
 
-		if torch.sum(abs(states[3:])) > 10:
-			done = 1
-			print("blew up")
+		# if dist < thresh and tick>20:
+		# 	print("did that thing you like")
+		# 	path = np.append(path, path_temp, axis=0)
+		# 	goal_path = np.append(goal_path, goal_path_temp, axis=0)
+		# 	done = 1
+
+		# if torch.sum(abs(states[3:])) > 10:
+		# 	done = 1
+		# 	print("blew up")
 
 		#timeout
 		if tick == tickLim:
@@ -96,6 +108,7 @@ for trial in range(trialLim):
 			done = 1
 
 		tick += 1
+		count += 1
 
 np.save("path",path)
 np.save("goal_path",goal_path)
